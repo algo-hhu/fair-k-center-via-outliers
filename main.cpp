@@ -15,17 +15,21 @@ using Graph = lemon::SmartDigraph;
 using Node = Graph::Node;
 using Arc = Graph::Arc;
 
-std::vector<Point*>* gonzales(fc::ClusteringProblem& p) {
-    std::vector<Point*>* centers = new std::vector<Point*>(p.k(), nullptr);
+/**
+ * @brief Center-aware version of fairlet gonzales with outliers
+ */
+template<class iterator_t>
+std::vector<Point*>* gonzales(iterator_t begin, iterator_t end, std::size_t k) {
+    std::vector<Point*>* centers = new std::vector<Point*>(k, nullptr);
 
     double max_dist = 0.0;
-    for(std::size_t i=0; i < p.n(); ++i) {
-        for(std::size_t j=i; j < p.n(); ++j) {
-            const double pq_dist = fc::sq_dist(p.points()[i], p.points()[j]);
+    for(auto x=begin; x != end; ++x) {
+        for(auto y=x+1; y != end; ++y) {
+            const double pq_dist = fc::sq_dist(*x, *y);
             if(pq_dist > max_dist) {
                 max_dist = pq_dist;
-                centers->at(0) = &p.points()[i];
-                centers->at(1) = &p.points()[j];
+                centers->at(0) = &(*x);
+                centers->at(1) = &(*y);
             }
         }
     }
@@ -34,18 +38,20 @@ std::vector<Point*>* gonzales(fc::ClusteringProblem& p) {
     centers->at(1)->assign_cluster(1);
 
     // choose center number c
-    for(std::size_t c=2; c < p.k(); ++c) {
+    for(std::size_t c=2; c < k; ++c) {
         double max_dist = 0.0;
         
         // for all points, check distance to all fixed centers
-        for(std::size_t i=0; i < p.n(); ++i) {
-            if(p.points()[i].cluster() != fc::Point::not_assigned) {
+        for(auto x=begin; x != end; ++x) {
+            // skip points that have already been assigned, or ar the partner in a fairlet
+            if(x->cluster() != fc::Point::not_assigned || x->buddy() != nullptr) {
                 continue;
             }
             
+            // compute closest center for point x in current center set
             double min_dist = std::numeric_limits<double>::max();
             for(std::size_t j=0; j < c; ++j) {
-                const double dist = fc::sq_dist(p.points()[i], *centers->at(j));
+                const double dist = fc::sq_dist(*x, *centers->at(j));
                 if(dist < min_dist) {
                     min_dist = dist;
                 }
@@ -53,7 +59,7 @@ std::vector<Point*>* gonzales(fc::ClusteringProblem& p) {
 
             if(min_dist > max_dist) {
                 max_dist = min_dist;
-                centers->at(c) = &p.points()[i];
+                centers->at(c) = &(*x);
             }
         }
 
@@ -118,22 +124,23 @@ void update_capacities(const fc::ClusteringProblem& p, const Graph* g, double r,
     }
 }
 
-void assign_buddies(fc::ClusteringProblem& p, const Graph* g, const lemon::Preflow<Graph>::FlowMap& flow) {
-    for(auto x : p.points_of_color(0)) {
-        for(Graph::OutArcIt e(*g, g->nodeFromId(x.idx())); e != lemon::INVALID; ++e) {
-            const int j = g->id(g->target(e));
+void assign_buddies(fc::ClusteringProblem& p, const Graph* g, const lemon::Preflow<Graph>::FlowMap& flow, Index blue) {
+    for(auto& x : p.points_of_color(blue)) {
+        bool has_buddy = false;
+        for(Graph::InArcIt e(*g, g->nodeFromId(x.idx())); e != lemon::INVALID; ++e) {
+            const int j = g->id(g->source(e));
 
             if(flow[e] > 0) {
                 p.points(x.idx()).assign_buddy(p.points(j));
+                has_buddy = true;
+                break;
             }
         }
+        if(!has_buddy) x.mark_as_outlier();
     }
 }
 
-double build_fairlets(fc::ClusteringProblem& p) {
-    const Index red = (p.n_points(0) <= p.n_points(1) ? 0 : 1);
-    const Index blue = 1 - red;
-
+double build_fairlets(fc::ClusteringProblem& p, Index red, Index blue) {
     Node s, t;
     Graph* g = build_fairlet_graph(p, red, blue, &s, &t);
     auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);   
@@ -162,10 +169,9 @@ double build_fairlets(fc::ClusteringProblem& p) {
     }
 
     preflow.startSecondPhase();
-    assign_buddies(p, g, preflow.flowMap());
+    assign_buddies(p, g, preflow.flowMap(), blue);
 
     delete g;
-
     return min_r;
 }
 
@@ -178,9 +184,12 @@ int main() {
         std::cout << p << std::endl;
     }
 
-    double r = build_fairlets(problem);
+    const Index red = (problem.n_points(0) <= problem.n_points(1) ? 0 : 1);
+    const Index blue = 1 - red;
 
-    auto centers = gonzales(problem);
+    double r = build_fairlets(problem, red, blue);
+
+    auto centers = gonzales(problem.points_of_color(red).begin(), problem.points_of_color(red).end(), problem.k());
     assign_points(problem, *centers);
 
     std::cout << "Zentren:" << std::endl;
@@ -188,7 +197,7 @@ int main() {
         std::cout << *c << std::endl;
     }
 
-    std::cout << "Clustering:" << std::endl;
+    std::cout << "Clustering mit Radius " << r << ":" << std::endl;
     for(auto& p : problem.points()) {
         std::cout << p << std::endl;
     }

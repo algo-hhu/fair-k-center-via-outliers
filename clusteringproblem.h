@@ -21,7 +21,8 @@ class Point {
             _coords(dim, 0.0),
             _color(color),
             _cluster(Point::not_assigned),
-            _buddy(nullptr)
+            _buddy(nullptr),
+            _is_outlier(false)
         {
         }    
   
@@ -76,12 +77,23 @@ class Point {
             _idx = idx;
         }
 
+        bool is_outlier() const {
+            return _is_outlier;
+        }
+
+        void mark_as_outlier() {
+            _is_outlier = true;
+        }
+
+
+
     private:
         std::vector<double> _coords;
         Index _color;
         Index _cluster;
         Index _idx;
         Point* _buddy;
+        bool _is_outlier;
 };
 
 typedef std::vector<Point> PointSet;    
@@ -116,7 +128,7 @@ class ClusteringProblem {
         }
 
         void read_input(std::istream& is) {
-            int n; 
+            std::size_t n; 
             is >> n >> _dim >> _k >> _n_colors;
             
             delete _points;
@@ -140,7 +152,7 @@ class ClusteringProblem {
                 _first_point_of_color[i] = _first_point_of_color[i-1] + _n_points_of_color[i-1];
             }
 
-            for(std::size_t i=0; i < n(); ++i) {
+            for(std::size_t i=0; i < n; ++i) {
                 _points->at(i).set_idx(i);
             }
         }
