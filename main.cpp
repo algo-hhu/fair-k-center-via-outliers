@@ -142,12 +142,12 @@ double build_fairlets(fc::ClusteringProblem& p) {
     std::vector<double> distances = compute_distances(p);
     double min_r = std::numeric_limits<double>::max();
     std::size_t left = 0;
-    std::size_t right = distances->size()-1;
+    std::size_t right = distances.size()-1;
 
     while(left < right) {
         int middle = (left + right) / 2;
 
-        update_capacities(p, g, distances->at(middle), red, blue, &capacities);
+        update_capacities(p, g, distances.at(middle), red, blue, &capacities);
         preflow.runMinCut();
         if((unsigned int) preflow.flowValue() == p.n_points(red)) {
             right = middle - 1;
@@ -156,7 +156,7 @@ double build_fairlets(fc::ClusteringProblem& p) {
         }
 
         if(left >= right){
-            min_r = distances->at(middle);
+            min_r = distances.at(middle);
             break;
         } 
     }
@@ -164,7 +164,6 @@ double build_fairlets(fc::ClusteringProblem& p) {
     preflow.startSecondPhase();
     assign_buddies(p, g, preflow.flowMap());
 
-    delete distances;
     delete g;
 
     return min_r;
