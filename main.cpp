@@ -17,6 +17,9 @@ using Arc = Graph::Arc;
 
 /**
  * @brief Center-aware version of fairlet gonzales with outliers
+ * 
+ * For now, the algorithm ignores any point that is not the anchor of a fairlet.
+ * It also ignores any point marked as an outlier.
  */
 template<class iterator_t>
 std::vector<Point*>* gonzales(iterator_t begin, iterator_t end, std::size_t k) {
@@ -24,7 +27,9 @@ std::vector<Point*>* gonzales(iterator_t begin, iterator_t end, std::size_t k) {
 
     double max_dist = 0.0;
     for(auto x=begin; x != end; ++x) {
+        if(x->is_outlier() || x->buddy() != nullptr) continue;
         for(auto y=x+1; y != end; ++y) {
+            if(y->is_outlier() || y->buddy() != nullptr) continue;
             const double pq_dist = fc::sq_dist(*x, *y);
             if(pq_dist > max_dist) {
                 max_dist = pq_dist;
@@ -37,14 +42,20 @@ std::vector<Point*>* gonzales(iterator_t begin, iterator_t end, std::size_t k) {
     centers->at(0)->assign_cluster(0);
     centers->at(1)->assign_cluster(1);
 
-    // choose center number c
+    // choose center number c: Find point whose minimum distance to all fixed centers is maximal
+    // among those points that:
+    // - are not themselves fixed centers
+    // - are not a partner (i.e., not the anchor) in a fairlet
+    // - are not outliers
     for(std::size_t c=2; c < k; ++c) {
         double max_dist = 0.0;
         
         // for all points, check distance to all fixed centers
         for(auto x=begin; x != end; ++x) {
-            // skip points that have already been assigned, or ar the partner in a fairlet
-            if(x->cluster() != fc::Point::not_assigned || x->buddy() != nullptr) {
+            if(    x->cluster() != fc::Point::not_assigned 
+                || x->buddy() != nullptr 
+                || x->is_outlier()
+            ) {
                 continue;
             }
             
