@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 
 namespace fairclustering {
 
@@ -38,7 +39,8 @@ void read_point(std::istream& is, Point* p) {
 }
 
 
-void assign_points(ClusteringProblem& p, const std::vector<Point*>& centers) {
+double assign_points(ClusteringProblem& p, const std::vector<Point*>& centers) {
+    double max_radius = 0.0;
     for(std::size_t i=0; i < p.n(); ++i) {
         double min_dist = std::numeric_limits<double>::max();
         Index min_center = 0;
@@ -49,9 +51,27 @@ void assign_points(ClusteringProblem& p, const std::vector<Point*>& centers) {
                 min_center = j;
             }
         }
+        max_radius = std::max(max_radius, min_dist);
 
         p.points()[i].assign_cluster(min_center);
     }
+
+    return std::sqrt(max_radius);
+}
+
+std::vector<double> all_pairwise_distances(ClusteringProblem& p) {
+    const std::size_t n_pairs = (p.n()*p.n()-1) / 2;
+    std::vector<double> distances;
+    distances.reserve(n_pairs);
+
+    for(auto x=p.points().begin(); x != p.points().end(); ++x) {
+        for(auto y=x+1; y != p.points().end(); ++y) {
+            distances.push_back(sq_dist(*x, *y));
+        }
+    }
+
+    std::sort(distances.begin(), distances.end());
+    return distances;
 }
 
 }

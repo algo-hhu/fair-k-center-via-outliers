@@ -203,7 +203,8 @@ class ClusteringProblem {
         std::vector<std::size_t> _n_points_of_color;
 };
 
-void assign_points(ClusteringProblem& p, const std::vector<Point*>& centers);
+double assign_points(ClusteringProblem& p, const std::vector<Point*>& centers);
+std::vector<double> all_pairwise_distances(ClusteringProblem& p);
 
 } // namespace fairclustering
 #endif
