@@ -11,7 +11,6 @@ namespace fairclustering {
  * @brief Center-aware version of fairlet gonzales with outliers
  * 
  * For now, the algorithm ignores any point that is not the anchor of a fairlet.
- * It also ignores any point marked as an outlier.
  */
 template<class iterator_t>
 std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
@@ -19,9 +18,9 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
    
     double max_dist = 0.0;
     for(auto& x=begin; x != end; ++x) {
-        if(x->is_outlier() || x->buddy() != nullptr) continue;
+        if(x->buddy() != nullptr) continue;
         for(auto y=x+1; y != end; ++y) {
-            if(y->is_outlier() || y->buddy() != nullptr) continue;
+            if(y->buddy() != nullptr) continue;
             
             const double pq_dist = sq_dist(*x, *y);
             if(pq_dist > max_dist) {
@@ -47,7 +46,6 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
         for(auto& x=begin; x != end; ++x) {
             if(    x->cluster() != Point::not_assigned 
                 || x->buddy() != nullptr 
-                || x->is_outlier()
             ) {
                 continue;
             }
