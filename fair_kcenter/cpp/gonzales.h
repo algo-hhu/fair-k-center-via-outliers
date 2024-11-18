@@ -9,19 +9,18 @@ namespace fairclustering {
 
 /**
  * @brief Center-aware version of fairlet gonzales with outliers
- * 
+ *
  * For now, the algorithm ignores any point that is not the anchor of a fairlet.
  */
 template<class iterator_t>
 std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
     std::vector<Point*> centers(k, nullptr);
-   
     double max_dist = 0.0;
-    for(auto& x=begin; x != end; ++x) {
+    for(auto x=begin; x != end; ++x) {
         if(x->buddy() != nullptr) continue;
         for(auto y=x+1; y != end; ++y) {
             if(y->buddy() != nullptr) continue;
-            
+
             const double pq_dist = sq_dist(*x, *y);
             if(pq_dist > max_dist) {
                 max_dist = pq_dist;
@@ -41,15 +40,14 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
     // - are not outliers
     for(std::size_t c=2; c < k; ++c) {
         double max_dist = 0.0;
-        
         // for all points, check distance to all fixed centers
-        for(auto& x=begin; x != end; ++x) {
-            if(    x->cluster() != Point::not_assigned 
-                || x->buddy() != nullptr 
+        for(auto x=begin; x != end; ++x) {
+            if(    x->cluster() != Point::not_assigned
+                || x->buddy() != nullptr
             ) {
                 continue;
             }
-            
+
             // compute closest center for point x in current center set
             double min_dist = std::numeric_limits<double>::max();
             for(std::size_t j=0; j < c; ++j) {
@@ -59,7 +57,8 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
                 }
             }
 
-            if(min_dist > max_dist) {
+
+            if(min_dist >= max_dist) {
                 max_dist = min_dist;
                 centers[c] = &(*x);
             }

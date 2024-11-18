@@ -97,7 +97,7 @@ class Point {
         bool _is_outlier;
 };
 
-typedef std::vector<Point> PointSet;    
+typedef std::vector<Point> PointSet;
 
 std::ostream& operator<<(std::ostream& str, const Point& p);
 void read_point(std::istream& is, Point* p);
@@ -114,7 +114,7 @@ inline double sq_dist(const Point& p, const Point& q) {
 }
 
 class ClusteringProblem {
-    public: 
+    public:
         ClusteringProblem() :
             _points(nullptr),
             _dim(0),

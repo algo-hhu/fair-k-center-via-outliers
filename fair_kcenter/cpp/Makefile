@@ -22,4 +22,3 @@ clean:
 	rm -f ${OBJECTS} ${DEPS} ${BIN}
 
 .PHONY: all clean
-

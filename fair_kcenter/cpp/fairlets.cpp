@@ -14,8 +14,8 @@ namespace fairclustering {
 double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
     Node s, t;
     Graph* g = build_fairlet_graph(p, red, blue, &s, &t);
-    auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);   
-    lemon::Preflow<Graph> preflow(*g, capacities, s, t);   
+    auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);
+    lemon::Preflow<Graph> preflow(*g, capacities, s, t);
 
     std::vector<double> distances = all_pairwise_distances(p);
     double min_r = std::numeric_limits<double>::max();
@@ -28,7 +28,7 @@ double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
         update_capacities(p, g, distances.at(middle), red, blue, &capacities);
         preflow.runMinCut();
         if((unsigned int) preflow.flowValue() == p.n_points(red)) {
-            right = middle - 1; 
+            right = middle - 1;
             min_r = distances.at(middle);
         } else {
             left = middle + 1;
@@ -36,7 +36,7 @@ double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
 
         if(left >= right){
             break;
-        } 
+        }
     }
 
     preflow.startSecondPhase();

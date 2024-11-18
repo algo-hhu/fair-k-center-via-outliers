@@ -10,7 +10,7 @@ namespace fairclustering {
 std::ostream& operator<<(std::ostream& str, const Point& p) {
     const auto cur_precision = str.precision();
     const auto cur_flags = str.flags();
-    
+
     str << "[ ";
     str << std::fixed << std::setprecision(3);
     for(auto coord : p.coords()) {
@@ -32,10 +32,10 @@ void read_point(std::istream& is, Point* p) {
     Index color;
     is >> color;
     p->assign_color(color);
-    
+
     for(std::size_t i=0; i < p->dim(); ++i) {
         is >> (*p)[i];
-    }   
+    }
 }
 
 
@@ -79,7 +79,7 @@ void ClusteringProblem::sort_by_colors(){
             auto color_order = [](const Point& p, const Point& q) {
                 return p.color() < q.color();
             };
-            
+
             std::sort(_points->begin(), _points->end(), color_order);
 
             _first_point_of_color.resize(_n_colors);
@@ -94,12 +94,12 @@ void ClusteringProblem::sort_by_colors(){
         }
 
 void ClusteringProblem::read_input(std::istream& is) {
-    std::size_t n; 
+    std::size_t n;
     is >> n >> _dim >> _k >> _n_colors;
-    
+
     delete _points;
     _points = new PointSet(n, Point(_dim));
-    
+
     _n_points_of_color.resize(_n_colors, 0);
     for(auto& p : *_points) {
         read_point(is, &p);
@@ -109,14 +109,14 @@ void ClusteringProblem::read_input(std::istream& is) {
 }
 
 void ClusteringProblem::read_input(std::vector<std::vector<double>>& X, std::vector<size_t>& colors, size_t n_colors, size_t k) {
-    std::size_t n=X.size(); 
-    _dim=X[0].size(); 
-    _k=k; 
+    std::size_t n=X.size();
+    _dim=X[0].size();
+    _k=k;
     _n_colors=n_colors;
-    
+
     delete _points;
     _points = new PointSet(n, Point(_dim));
-    
+
     _n_points_of_color.resize(_n_colors, 0);
     for(size_t i=0; i<n; i++) {
         for(size_t j=0; j<_dim; j++){
@@ -134,7 +134,7 @@ void ClusteringProblem::read_input(double* X, std::size_t* colors, std::size_t n
     _dim=dim;
     _k=k;
     _n_colors=n_colors;
-    
+
     delete _points;
     _points = new PointSet(n, Point(_dim));
 
