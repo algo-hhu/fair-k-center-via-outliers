@@ -1,6 +1,6 @@
 import argparse
-from pathlib import Path
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -8,15 +8,17 @@ import pandas as pd
 import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
 
-def store_fcenter(output: Path, sol)->None:
-    result={
-        "cost": sol.inertia_, 
-        "k":sol.n_clusters, 
-        "centers": sol.cluster_centers_, 
-        "labels": sol.labels_
+
+def store_fcenter(output: Path, sol: fk.Fairkcenter) -> None:
+    result = {
+        "cost": sol.inertia_,
+        "k": sol.n_clusters,
+        "centers": sol.cluster_centers_,
+        "labels": sol.labels_,
     }
-    with open(output, "w") as file: 
+    with open(output, "w") as file:
         json.dump(result, file, indent=4, cls=JsonEncoder)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
