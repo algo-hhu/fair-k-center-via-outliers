@@ -2,3 +2,7 @@
 *.o
 fcluster
 .vscode
+dist/
+build/
+.mypy_cache/
+__pycache__/
