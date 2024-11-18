@@ -23,4 +23,5 @@ repos:
   rev: v1.10.0
   hooks:
   - id: mypy
-    args: ["--install-types", "--non-interactive"]
+    args: ["--install-types", "--non-interactive", "--config-file", ".mypy.ini"]
+    files: \.py$  # Ensure it only runs on .py files
