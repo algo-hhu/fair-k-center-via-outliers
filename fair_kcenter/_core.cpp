@@ -26,7 +26,21 @@ void transformCenters(double* centers, std::vector<fc::Point*>& vec_centers){
 
 void transformLabels(int* labels, fc::ClusteringProblem& problem){
     for(auto p: problem.points()){
-        labels[p.idx()]=p.color();
+        std::size_t cluster_id=p.cluster();
+        if(p.is_outlier()){
+            cluster_id=problem.k();
+        }
+        labels[p.idx()]=cluster_id;
+    }
+}
+
+void transformFairlets(int* fairlets, fc::ClusteringProblem& problem){
+    for(auto p: problem.points()){
+        std::size_t buddy_id=p.idx();
+        if(p.buddy()!=NULL){
+            buddy_id=p.buddy()->idx();
+        }
+        fairlets[p.idx()]=buddy_id;
     }
 }
 
@@ -52,7 +66,8 @@ extern "C"
             std::size_t k,
             std::size_t nc,
             int *labels,
-            double *centers
+            double *centers,
+            int *fairlets
         )
     {
 
@@ -66,6 +81,9 @@ extern "C"
         const fc::Index blue = 1 - red;
 
         fc::build_fairlets(problem, red, blue);
+        if(fairlets!=NULL){
+            transformFairlets(fairlets, problem);
+        }
 
         auto gonz_centers = fc::gonzales(problem.points_of_color(red).begin(), problem.points_of_color(red).end(), problem.k());
         double radius = fc::assign_points(problem, gonz_centers);

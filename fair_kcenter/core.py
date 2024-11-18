@@ -18,6 +18,7 @@ class Fairkcenter:
         self,
         X: np.ndarray,
         col: np.ndarray,
+        flets: bool = False,
     ) -> "Fairkcenter":
         if not isinstance(X, np.ndarray) or not isinstance(X, np.ndarray):
             raise ValueError("X muss ein numpy Array sein.")
@@ -54,6 +55,10 @@ class Fairkcenter:
         c_k = ctypes.c_uint(self.n_clusters)
         c_nc = ctypes.c_uint(self.n_col)
         c_labels = (ctypes.c_int * self.n_samples)()
+        if flets:
+            c_fairlets = (ctypes.c_int * self.n_samples)()
+        else:
+            c_fairlets = ctypes.POINTER(ctypes.c_int)()
         c_centers = (ctypes.c_double * self.n_features_in_ * self.n_clusters)()
 
         # Set the return type to double
@@ -67,6 +72,7 @@ class Fairkcenter:
             c_nc,
             c_labels,
             c_centers,
+            c_fairlets,
         )
 
         self.inertia_ = cost
@@ -76,6 +82,9 @@ class Fairkcenter:
         )
 
         self.labels_ = np.ctypeslib.as_array(c_labels)
+        self.fairlets = None
+        if c_fairlets is not None:
+            self.fairlets = np.ctypeslib.as_array(c_fairlets)
         self._n_features_out = len(self.cluster_centers_)
 
         return self

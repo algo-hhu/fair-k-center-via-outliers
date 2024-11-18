@@ -19,6 +19,7 @@ black = {extras = ["jupyter"], version = "^24.4.2"}
 pre-commit = "^2.14.0"
 flake8 = "^3.9.2"
 mypy = "^1.10.0"
+matplotlib = "^3.8.0"
 
 [tool.poetry.build]
 script = "build_extension.py"
