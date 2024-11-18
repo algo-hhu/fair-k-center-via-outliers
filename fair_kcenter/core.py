@@ -1,13 +1,6 @@
 import ctypes
-from numbers import Integral
-from time import time
-from typing import Any, Optional, Sequence
 
 import numpy as np
-from sklearn._config import get_config
-from sklearn.cluster import KMeans
-from sklearn.utils._param_validation import Interval
-from sklearn.utils.validation import _check_sample_weight
 
 import fair_kcenter._core  # type: ignore
 
@@ -15,7 +8,6 @@ _DLL = ctypes.cdll.LoadLibrary(fair_kcenter._core.__file__)
 
 
 class Fairkcenter:
-
     def __init__(
         self,
         n_clusters: int,
@@ -30,18 +22,18 @@ class Fairkcenter:
         if not isinstance(X, np.ndarray) or not isinstance(X, np.ndarray):
             raise ValueError("X muss ein numpy Array sein.")
         self.n_samples = X.shape[0]
-        self.col_names=np.unique(col)
-        self.n_col=self.col_names.shape[0]
+        self.col_names = np.unique(col)
+        self.n_col = self.col_names.shape[0]
         if self.n_col > 2:
             raise ValueError(
                 f"Number of colors is {self.n_col} but currently only 2 colors are allowed."
             )
         self.n_features_in_ = X.shape[1]
 
-        #assign every color a number betwenn 0 and n_col-1
-        self._col=np.zeros(self.n_samples, dtype=int)
+        # assign every color a number betwenn 0 and n_col-1
+        self._col = np.zeros(self.n_samples, dtype=int)
         for i, name in enumerate(self.col_names):
-            self._col[col==name]=i
+            self._col[col == name] = i
 
         if self.n_samples < self.n_clusters:
             raise ValueError(
@@ -52,7 +44,7 @@ class Fairkcenter:
                 f"n_samples={self.n_samples} should be >= n_clusters={self.n_clusters}."
             )
 
-        self._X=np.ascontiguousarray(X.astype(np.float64))
+        self._X = np.ascontiguousarray(X.astype(np.float64))
 
         # Declare c types
         c_array_pts = self._X.ctypes.data_as(ctypes.POINTER(ctypes.c_double))

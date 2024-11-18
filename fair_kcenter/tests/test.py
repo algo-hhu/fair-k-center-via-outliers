@@ -8,7 +8,7 @@ import pandas as pd
 import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
 
-def store_fcenter(output: Path, sol: fk.Fairkcenter)->None:
+def store_fcenter(output: Path, sol)->None:
     result={
         "cost": sol.inertia_, 
         "k":sol.n_clusters, 
