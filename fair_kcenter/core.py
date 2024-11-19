@@ -55,6 +55,7 @@ class Fairkcenter:
         c_k = ctypes.c_uint(self.n_clusters)
         c_nc = ctypes.c_uint(self.n_col)
         c_labels = (ctypes.c_int * self.n_samples)()
+        c_cost = (ctypes.c_double * 2)()
         if flets:
             c_fairlets = (ctypes.c_int * self.n_samples)()
         else:
@@ -63,7 +64,7 @@ class Fairkcenter:
 
         # Set the return type to double
         _DLL.fairKCenter.restype = ctypes.c_double
-        cost = _DLL.fairKCenter(
+        _DLL.fairKCenter(
             c_array_pts,
             c_array_col,
             c_n,
@@ -73,9 +74,13 @@ class Fairkcenter:
             c_labels,
             c_centers,
             c_fairlets,
+            c_cost,
         )
 
-        self.inertia_ = cost
+        cost = np.ctypeslib.as_array(c_cost)
+
+        self.inertia_ = cost[1]
+        self.inertia_fairlets = cost[0]
 
         self.cluster_centers_ = np.ctypeslib.as_array(
             c_centers, shape=(self.n_clusters, self.n_features_in_)

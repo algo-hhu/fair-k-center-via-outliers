@@ -2,7 +2,7 @@
 #include <Python.h>
 #include <iostream>
 #include <cstdint>
-
+#include <utility>
 #include "cpp/fair_kcenter.hpp"
 
 namespace fc=fairclustering;
@@ -58,7 +58,7 @@ extern "C"
 #if defined(_WIN32) || defined(__CYGWIN__)
     __declspec(dllexport)
 #endif
-    double fairKCenter(
+    void fairKCenter(
             double *array,
             std::size_t *colors,
             std::size_t n,
@@ -67,7 +67,8 @@ extern "C"
             std::size_t nc,
             int *labels,
             double *centers,
-            int *fairlets
+            int *fairlets,
+            double* cost
         )
     {
 
@@ -80,17 +81,17 @@ extern "C"
         const fc::Index red = (problem.n_points(0) <= problem.n_points(1) ? 0 : 1);
         const fc::Index blue = 1 - red;
 
-        fc::build_fairlets(problem, red, blue);
+        cost[0]=fc::build_fairlets(problem, red, blue);
         if(fairlets!=NULL){
             transformFairlets(fairlets, problem);
         }
 
         auto gonz_centers = fc::gonzales(problem.points_of_color(red).begin(), problem.points_of_color(red).end(), problem.k());
-        double radius = fc::assign_points(problem, gonz_centers);
+        cost[1] = fc::assign_points(problem, gonz_centers);
 
         transformCenters(centers, gonz_centers);
         transformLabels(labels, problem);
-        return radius;
+        return;
     }
 } // extern "C"
 

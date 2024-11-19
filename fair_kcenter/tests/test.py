@@ -84,6 +84,7 @@ def plot_by_dict_fairlets(
 def solution_as_dict(sol: fk.Fairkcenter) -> Dict:
     result = {
         "cost": sol.inertia_,
+        "fairlet_cost": sol.inertia_fairlets,
         "n_clusters": sol.n_clusters,
         "centers": sol.cluster_centers_,
         "labels": sol.labels_,
