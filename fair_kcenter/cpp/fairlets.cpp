@@ -22,12 +22,13 @@ double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
     int left = 0;
     int right = distances.size()-1;
 
+    double cap=distances.at(right);
     while(left < right) {
         int middle = (left + right) / 2;
-
         update_capacities(p, g, distances.at(middle), red, blue, &capacities);
         preflow.runMinCut();
         if((unsigned int) preflow.flowValue() == p.n_points(red)) {
+            cap=distances.at(middle);
             right = middle - 1;
             min_r = distances.at(middle);
         } else {
@@ -38,6 +39,9 @@ double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
             break;
         }
     }
+
+    update_capacities(p, g, cap, red, blue, &capacities);
+    preflow.runMinCut();
 
     preflow.startSecondPhase();
     set_buddies_from_flow(p, g, preflow.flowMap(), blue);
