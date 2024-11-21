@@ -18,10 +18,11 @@ class Point {
     public:
         static const Index not_assigned = std::numeric_limits<Index>::max();
 
-        Point(std::size_t dim, Index color=Point::not_assigned) :
+        Point(std::size_t dim, Index color=Point::not_assigned, Index pos=0) :
             _coords(dim, 0.0),
             _color(color),
             _cluster(Point::not_assigned),
+            _pos(pos),
             _buddy(nullptr),
             _is_outlier(false)
         {
@@ -77,6 +78,14 @@ class Point {
             _idx = idx;
         }
 
+        const Index pos() const{
+            return _pos;
+        }
+
+        void set_pos(Index pos){
+            _pos=pos;
+        }
+
         bool is_outlier() const {
             return _is_outlier;
         }
@@ -92,6 +101,7 @@ class Point {
         Index _color;
         Index _cluster;
         Index _idx;
+        Index _pos;
         Point* _buddy;
         Index _index;
         bool _is_outlier;

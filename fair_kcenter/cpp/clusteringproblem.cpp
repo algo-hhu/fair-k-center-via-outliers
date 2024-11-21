@@ -101,9 +101,12 @@ void ClusteringProblem::read_input(std::istream& is) {
     _points = new PointSet(n, Point(_dim));
 
     _n_points_of_color.resize(_n_colors, 0);
+    std::size_t i=0;
     for(auto& p : *_points) {
         read_point(is, &p);
+        p.set_pos(i);
         _n_points_of_color[p.color()]++;
+        i++;
     }
     sort_by_colors();
 }
@@ -122,7 +125,7 @@ void ClusteringProblem::read_input(std::vector<std::vector<double>>& X, std::vec
         for(size_t j=0; j<_dim; j++){
             (*_points)[i][j]=X[i][j];
         (*_points)[i].assign_color(colors[i]);
-        (*_points)[i].set_idx(i);
+        (*_points)[i].set_pos(i);
         _n_points_of_color[(*_points)[i].color()]++;
         }
     }
@@ -145,7 +148,7 @@ void ClusteringProblem::read_input(double* X, std::size_t* colors, std::size_t n
             (*_points)[i][j]=X[i*dim+j];
         }
         (*_points)[i].assign_color(colors[i]);
-        (*_points)[i].set_idx(i);
+        (*_points)[i].set_pos(i);
         _n_points_of_color[(*_points)[i].color()]++;
     }
     sort_by_colors();

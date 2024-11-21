@@ -30,17 +30,17 @@ void transformLabels(int* labels, fc::ClusteringProblem& problem){
         if(p.is_outlier()){
             cluster_id=problem.k();
         }
-        labels[p.idx()]=cluster_id;
+        labels[p.pos()]=cluster_id;
     }
 }
 
 void transformFairlets(int* fairlets, fc::ClusteringProblem& problem){
     for(auto p: problem.points()){
-        std::size_t buddy_id=p.idx();
+        std::size_t buddy_id=p.pos();
         if(p.buddy()!=NULL){
-            buddy_id=p.buddy()->idx();
+            buddy_id=p.buddy()->pos();
         }
-        fairlets[p.idx()]=buddy_id;
+        fairlets[p.pos()]=buddy_id;
     }
 }
 
