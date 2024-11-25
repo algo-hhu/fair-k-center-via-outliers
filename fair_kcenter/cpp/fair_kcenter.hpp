@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <vector>
-
+#include <stdexcept>
 #include <cmath>
 
 namespace fairclustering{

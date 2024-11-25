@@ -9,9 +9,49 @@
 
 namespace fairclustering {
 
+double build_fairlets_vanilla(ClusteringProblem& p, Index red, Index blue) {
+    if(p.n_points(red)!=p.n_points(blue)){
+        throw std::invalid_argument("Number of points of given colors does not match. Try different ratio or version with outliers.");
+    }
+    Node s, t;
+    Graph* g = build_fairlet_graph(p, red, blue, &s, &t);
+    auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);
+    lemon::Preflow<Graph> preflow(*g, capacities, s, t);
 
+    std::vector<double> distances = all_pairwise_distances_by_anc(p);
+    double min_r = std::numeric_limits<double>::max();
+    int left = 0;
+    int right = distances.size()-1;
 
-double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
+    double cap=distances.at(right);
+    while(left < right) {
+        int middle = (left + right) / 2;
+        update_capacities(p, g, distances.at(middle), red, blue, &capacities);
+        preflow.runMinCut();
+        if((unsigned int) preflow.flowValue() == p.n_points(red)) {
+            cap=distances.at(middle);
+            right = middle - 1;
+            min_r = distances.at(middle);
+        } else {
+            left = middle + 1;
+        }
+
+        if(left >= right){
+            break;
+        }
+    }
+
+    update_capacities(p, g, cap, red, blue, &capacities);
+    preflow.runMinCut();
+
+    preflow.startSecondPhase();
+    set_buddies_from_flow(p, g, preflow.flowMap(), blue);
+
+    delete g;
+    return std::sqrt(min_r);
+}
+
+double build_fairlets_outlier(ClusteringProblem& p, Index red, Index blue) {
     Node s, t;
     Graph* g = build_fairlet_graph(p, red, blue, &s, &t);
     auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);
@@ -50,7 +90,7 @@ double build_fairlets(ClusteringProblem& p, Index red, Index blue) {
     return std::sqrt(min_r);
 }
 
-Graph* build_fairlet_graph(ClusteringProblem& p, Index red, Index blue, Node* s, Node* t) {
+Graph* init_graph(ClusteringProblem& p, Index red, Index blue, Node* s, Node* t){
     Graph* g = new Graph();
     g->reserveNode(p.n() + 2);
 
@@ -63,17 +103,29 @@ Graph* build_fairlet_graph(ClusteringProblem& p, Index red, Index blue, Node* s,
 
     for(auto& x : p.points_of_color(red)) {
         g->addArc(*s, g->nodeFromId(x.idx()));
-        for(auto& y : p.points_of_color(blue)) {
-            g->addArc(g->nodeFromId(x.idx()), g->nodeFromId(y.idx()));
-        }
     }
-
     for(auto y : p.points_of_color(blue)) {
         g->addArc(g->nodeFromId(y.idx()), *t);
     }
 
     return g;
 }
+
+//adds also edges between blue points
+Graph* build_fairlet_graph(ClusteringProblem& p, Index red, Index blue, Node* s, Node* t) {
+    Graph* g = init_graph(p, red, blue, s, t);
+
+    for(auto& x : p.points_of_color(red)) {
+        for(auto& y : p.points_of_color(blue)) {
+            if(x.idx()!=y.idx()){
+                g->addArc(g->nodeFromId(x.idx()), g->nodeFromId(y.idx()));
+            }
+        }
+    }
+
+    return g;
+}
+
 
 void update_capacities(const ClusteringProblem& p, const Graph* g, double r, Index red, Index blue, lemon::Preflow<Graph>::CapacityMap* capacities) {
     for(auto x : p.points_of_color(red)) {
@@ -89,6 +141,7 @@ void update_capacities(const ClusteringProblem& p, const Graph* g, double r, Ind
         }
     }
 }
+
 
 void set_buddies_from_flow(ClusteringProblem& p, const Graph* g, const lemon::Preflow<Graph>::FlowMap& flow, Index blue) {
     for(auto& x : p.points_of_color(blue)) {

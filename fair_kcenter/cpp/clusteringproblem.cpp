@@ -74,6 +74,22 @@ std::vector<double> all_pairwise_distances(ClusteringProblem& p) {
     return distances;
 }
 
+//currently n^3, I guess one can imporve this to n^2log(n)
+std::vector<double> all_pairwise_distances_by_anc(ClusteringProblem& p) {
+    const std::size_t n_pairs = (p.n()*p.n()-1) / 2;
+    std::vector<double> distances;
+    distances.reserve(n_pairs);
+
+    for(auto x=p.points().begin(); x != p.points().end(); ++x) {
+        for(auto y=x+1; y != p.points().end(); ++y) {
+            distances.push_back(sq_dist(*x, *y));
+        }
+    }
+
+    std::sort(distances.begin(), distances.end());
+    return distances;
+}
+
 void ClusteringProblem::sort_by_colors(){
             std::size_t n=(*_points).size();
             auto color_order = [](const Point& p, const Point& q) {
@@ -97,6 +113,10 @@ void ClusteringProblem::read_input(std::istream& is) {
     std::size_t n;
     is >> n >> _dim >> _k >> _n_colors;
 
+    if(_n_colors>2 || _n_colors==1){
+        throw std::invalid_argument("Currently only 2 colors are supported.");
+    }
+
     delete _points;
     _points = new PointSet(n, Point(_dim));
 
@@ -111,10 +131,15 @@ void ClusteringProblem::read_input(std::istream& is) {
     sort_by_colors();
 }
 
-void ClusteringProblem::read_input(std::vector<std::vector<double>>& X, std::vector<size_t>& colors, size_t n_colors, size_t k) {
+void ClusteringProblem::read_input(std::vector<std::vector<double>>& X, std::vector<size_t>& colors, std::size_t n_colors, std::size_t k, std::size_t ratio=1) {
     std::size_t n=X.size();
     _dim=X[0].size();
     _k=k;
+
+    if(n_colors>2 || n_colors==1){
+        throw std::invalid_argument("Currently only 2 colors are supported.");
+    }
+
     _n_colors=n_colors;
 
     delete _points;
@@ -124,19 +149,38 @@ void ClusteringProblem::read_input(std::vector<std::vector<double>>& X, std::vec
     for(size_t i=0; i<n; i++) {
         for(size_t j=0; j<_dim; j++){
             (*_points)[i][j]=X[i][j];
+        if(colors[i]>=_n_colors){
+            throw std::invalid_argument("Colors must be n the range 0,..,n_colors.");
+        }
         (*_points)[i].assign_color(colors[i]);
         (*_points)[i].set_pos(i);
         _n_points_of_color[(*_points)[i].color()]++;
         }
     }
 
+    if(ratio==0){
+        throw std::invalid_argument("Color-ratio must be at least 1.");
+    }
+    //only works with 2 colors
+    if(_n_points_of_color[0]<_n_points_of_color[1] && ratio*_n_points_of_color[0]>_n_points_of_color[1]){
+        throw std::invalid_argument("Color-ratio can not be achieved.");
+    }
+    else if(_n_points_of_color[1]<=_n_points_of_color[0] && ratio*_n_points_of_color[1]>_n_points_of_color[0]){
+        throw std::invalid_argument("Color-ratio can not be achieved.");
+    }
+    _ratio=ratio;
+
     sort_by_colors();
 }
 
-void ClusteringProblem::read_input(double* X, std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim) {
+void ClusteringProblem::read_input(double* X, std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim, std::size_t ratio=1) {
     _dim=dim;
     _k=k;
     _n_colors=n_colors;
+
+    if(n_colors>2 || n_colors==1){
+        throw std::invalid_argument("Currently only 2 colors are supported.");
+    }
 
     delete _points;
     _points = new PointSet(n, Point(_dim));
@@ -149,8 +193,23 @@ void ClusteringProblem::read_input(double* X, std::size_t* colors, std::size_t n
         }
         (*_points)[i].assign_color(colors[i]);
         (*_points)[i].set_pos(i);
+        if(colors[i]>=_n_colors){
+            throw std::invalid_argument("Colors must be n the range 0,..,n_colors.");
+        }
         _n_points_of_color[(*_points)[i].color()]++;
     }
+
+    if(ratio==0){
+        throw std::invalid_argument("Color-ratio must be at least 1.");
+    }
+    //only works with 2 colors
+    if(_n_points_of_color[0]<_n_points_of_color[1] && ratio*_n_points_of_color[0]>_n_points_of_color[1]){
+        throw std::invalid_argument("Color-ratio can not be achieved.");
+    }
+    else if(_n_points_of_color[1]<=_n_points_of_color[0] && ratio*_n_points_of_color[1]>_n_points_of_color[0]){
+        throw std::invalid_argument("Color-ratio can not be achieved.");
+    }
+    _ratio=ratio;
     sort_by_colors();
 }
 

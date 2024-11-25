@@ -8,6 +8,7 @@
 #include <cassert>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 
 namespace fairclustering {
 
@@ -130,7 +131,8 @@ class ClusteringProblem {
             _dim(0),
             _k(0),
             _n_colors(0),
-            _n_points_of_color()
+            _n_points_of_color(),
+            _ratio(1)
         {
         }
 
@@ -140,9 +142,9 @@ class ClusteringProblem {
 
         void read_input(std::istream& is);
 
-        void read_input(std::vector<std::vector<double>>& X, std::vector<std::size_t>& colors, std::size_t n_colors, std::size_t k);
+        void read_input(std::vector<std::vector<double>>& X, std::vector<std::size_t>& colors, std::size_t n_colors, std::size_t k, std::size_t ratio);
 
-        void read_input(double* X, std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t dim, std::size_t k);
+        void read_input(double* X, std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t dim, std::size_t k, std::size_t ratio);
 
         void sort_by_colors();
 
@@ -183,6 +185,10 @@ class ClusteringProblem {
             return std::span(_first_point_of_color[color], _n_points_of_color[color]);
         }
 
+        void set_ratio(std::size_t ratio){
+            _ratio=ratio;
+        }
+
     private:
         PointSet* _points;
         std::size_t _dim;
@@ -190,6 +196,7 @@ class ClusteringProblem {
         std::size_t _n_colors;
         std::vector<PointSet::iterator> _first_point_of_color;
         std::vector<std::size_t> _n_points_of_color;
+        std::size_t _ratio; //clusters will have color-ratio 1:_ratio in the end, default 1:1
 };
 
 double assign_points(ClusteringProblem& p, const std::vector<Point*>& centers);
