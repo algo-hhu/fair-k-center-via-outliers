@@ -39,9 +39,39 @@ void read_point(std::istream& is, Point* p) {
 }
 
 
-double assign_points(ClusteringProblem& p, const std::vector<Point*>& centers) {
+double ClusteringProblem::assign_points(const std::vector<Point*>& centers) {
     double max_radius = 0.0;
+
+    for(auto pt=_first_point_of_color[0]; pt!=_first_point_of_color[1]; pt++){
+        double min_dist = std::numeric_limits<double>::max();
+        Index min_center = 0;
+        for(std::size_t j=0; j < _k; ++j) {
+            const double dist = sq_dist(*pt, *centers[j]);
+            if(dist < min_dist) {
+                min_dist = dist;
+                min_center = j;
+            }
+        }
+        max_radius = std::max(max_radius, min_dist);
+
+        pt->assign_cluster(min_center);
+    }
+    for(std::size_t col=1; col<_n_colors; col++){
+        for(auto& pt: points_of_color(col)){
+            if(!pt.is_outlier()){
+                Index c=pt.buddy()->cluster();
+                pt.assign_cluster(c);
+            }
+        }
+    }
+    /*
     for(std::size_t i=0; i < p.n(); ++i) {
+        if(p.points()[i].color()==1){
+            if(!p.points()[i].is_outlier()){
+            Index c=p.points()[i].buddy()->cluster();
+            p.points()[i].assign_cluster(c);}
+            continue;
+        }
         double min_dist = std::numeric_limits<double>::max();
         Index min_center = 0;
         for(std::size_t j=0; j < p.k(); ++j) {
@@ -55,7 +85,7 @@ double assign_points(ClusteringProblem& p, const std::vector<Point*>& centers) {
 
         p.points()[i].assign_cluster(min_center);
     }
-
+    */
     return std::sqrt(max_radius);
 }
 

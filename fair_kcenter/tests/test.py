@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--k", type=int, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path, default=None)
 
     args = parser.parse_args()
     df = pd.read_csv(args.input, sep=" ")
@@ -109,7 +110,15 @@ if __name__ == "__main__":
     sol.fit(X, colors, flets=True)
 
     res = solution_as_dict(sol)
-    plot_by_dict(res=res, X=X, colors=colors, name=Path("test.png"))
-    plot_by_dict_fairlets(res=res, X=X, colors=colors, name=Path("test_fairlets.png"))
-    with open(args.output, "w") as file:
+    file_name = os.path.splitext(os.path.basename(args.input))[0]
+    plot_by_dict(
+        res=res, X=X, colors=colors, name=Path(f"plots/{file_name}_{args.k}.png")
+    )
+    plot_by_dict_fairlets(
+        res=res,
+        X=X,
+        colors=colors,
+        name=Path(f"plots/{file_name}_fairlets_{args.k}.png"),
+    )
+    with open(f"results/{file_name}_{args.k}", "w") as file:
         json.dump(res, file, indent=4, cls=JsonEncoder)

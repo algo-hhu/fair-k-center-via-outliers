@@ -96,5 +96,8 @@ if __name__ == "__main__":
         df.to_csv(args.result_file)
     else:
         df.to_csv(
-            f"{args.type}_{args.n}_{args.m}.in", sep=" ", index=False, header=False
+            f"instances/{args.type}_{args.n}_{args.m}_{round(args.ratio,2)}.csv",
+            sep=" ",
+            index=False,
+            header=False,
         )

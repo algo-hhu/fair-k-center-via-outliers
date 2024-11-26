@@ -87,7 +87,7 @@ extern "C"
         }
 
         auto gonz_centers = fc::gonzales(problem.points_of_color(red).begin(), problem.points_of_color(red).end(), problem.k());
-        cost[1] = fc::assign_points(problem, gonz_centers);
+        cost[1] = problem.assign_points(gonz_centers);
 
         transformCenters(centers, gonz_centers);
         transformLabels(labels, problem);
