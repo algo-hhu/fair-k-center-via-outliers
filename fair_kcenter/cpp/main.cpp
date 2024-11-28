@@ -43,7 +43,7 @@ int main() {
     double max_fairlet_radius = fc::build_fairlets(problem, red, blue);
 
     auto centers = fc::gonzales(problem.points_of_color(red).begin(), problem.points_of_color(red).end(), problem.k());
-    double r = fc::assign_points(problem, centers);
+    double r = problem.assign_points(centers);
 
     std::cout << "Zentren:" << std::endl;
     for(auto& c : centers) {

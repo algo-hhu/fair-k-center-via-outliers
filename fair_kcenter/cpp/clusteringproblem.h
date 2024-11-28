@@ -184,6 +184,7 @@ class ClusteringProblem {
         auto points_of_color(Index color) const {
             return std::span(_first_point_of_color[color], _n_points_of_color[color]);
         }
+        double assign_points(const std::vector<Point*>& centers);
 
         void set_ratio(std::size_t ratio){
             _ratio=ratio;
@@ -199,7 +200,6 @@ class ClusteringProblem {
         std::size_t _ratio; //clusters will have color-ratio 1:_ratio in the end, default 1:1
 };
 
-double assign_points(ClusteringProblem& p, const std::vector<Point*>& centers);
 std::vector<double> all_pairwise_distances(ClusteringProblem& p);
 
 } // namespace fairclustering
