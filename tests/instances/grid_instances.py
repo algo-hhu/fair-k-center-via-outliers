@@ -1,29 +1,40 @@
 import argparse
 import math
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 
+# from typing import Optional
+
 
 # red points are on upper grid part, blue points on lower grid part
-def seperated(n: int, m: int, ratio: float) -> np.ndarray:
+def seperated(n: int, m: int, ratios: list) -> np.ndarray:
     size = n * m
-    num_r = math.floor(size * ratio)
+    total_rat = sum(ratios)
+
+    num_pts = [math.floor(size * r / total_rat) for r in ratios]
+    if sum(num_pts) != size:
+        num_pts[-1] += size - sum(num_pts)
 
     points = np.empty((size + 1, 3), dtype=int)
-    # red points
-    points[0] = np.array([size, 2, 2])
-    points[1 : num_r + 1] = np.array([[0, i % n, i // n] for i in range(num_r)])
-    # blues points
-    points[num_r + 1 : size + 1] = np.array(
-        [[1, i % n, i // n] for i in range(num_r, size)]
-    )
+    points[0] = np.array([size, 2, len(ratios)])
+
+    left: int = 1
+    right: int = 1
+    col: int = 0
+    for num in num_pts:
+        right += num
+        points[left:right] = np.array(
+            [[col, i % n, i // n] for i in range(left - 1, right - 1)]
+        )
+        left = right
+        col += 1
 
     return points
 
 
+"""
 # draw red points uniformly at random
 def random(n: int, m: int, ratio: float, seed: Optional[int]) -> np.ndarray:
     if seed is not None:
@@ -65,7 +76,7 @@ def even(n: int, m: int, ratio: float) -> np.ndarray:
         )
     )
     return points
-
+"""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -75,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--n", type=int, default=10)
     parser.add_argument("--m", type=int, default=10)
     parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--ratio", type=float, default=0.5)
+    # parser.add_argument("--ratio", type=float, default=0.5)
     parser.add_argument(
         "--type", type=str, default="seperated", choices=["seperated", "random", "even"]
     )
@@ -83,20 +94,23 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    ratios = [2, 1, 5]
+
     points = None
     if args.type == "seperated":
-        points = seperated(args.n, args.m, args.ratio)
-    elif args.type == "random":
-        points = random(args.n, args.m, args.ratio, args.seed)
-    elif args.type == "even":
-        points = even(args.n, args.m, args.ratio)
+        points = seperated(args.n, args.m, ratios)
+
+    # elif args.type == "random":
+    #    points = random(args.n, args.m, ratios, args.seed)
+    # elif args.type == "even":
+    #    points = even(args.n, args.m, ratios)
 
     df = pd.DataFrame(points)
     if args.result_file is not None:
         df.to_csv(args.result_file)
     else:
         df.to_csv(
-            f"instances/{args.type}_{args.n}_{args.m}_{round(args.ratio,2)}.csv",
+            f"{args.type}_{args.n}_{args.m}_{ratios}.csv",
             sep=" ",
             index=False,
             header=False,

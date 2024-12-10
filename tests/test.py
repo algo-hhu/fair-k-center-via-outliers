@@ -1,6 +1,9 @@
 import argparse
 import json
+import logging
 import os
+import sys
+from os.path import join
 from pathlib import Path
 from typing import Any, Dict
 
@@ -10,6 +13,28 @@ import pandas as pd
 
 import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
+
+logger = logging.getLogger(__name__)
+
+
+def set_up_logger(log_file: Path, mode: str = "w+") -> None:
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    formatter = logging.Formatter(
+        "[%(asctime)s: %(levelname)s/%(filename)s:%(lineno)d] %(message)s"
+    )
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.DEBUG)
+    stdout_handler.setFormatter(formatter)
+
+    file_handler = logging.FileHandler(log_file, mode=mode)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    logger = logging.getLogger()
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stdout_handler)
 
 
 def plot_by_dict(
@@ -100,14 +125,36 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--k", type=int, required=True)
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--verbose", action="store_true")
 
     args = parser.parse_args()
+
+    set_up_logger(
+        Path(
+            join(
+                args.input.parent,
+                args.input.name.replace(".csv", ".log"),
+            )
+        )
+    )
+    if args.verbose:
+        logging.getLogger().setLevel(logging.INFO)
+    else:
+        logging.getLogger().setLevel(logging.WARNING)
+
     df = pd.read_csv(args.input, sep=" ")
     colors = np.array(df.iloc[:, 0])
-    X = np.array(df.iloc[:, 1:])
+    unique_colors, color_numbers = np.unique(colors, return_counts=True)
 
-    sol = fk.Fairkcenter(args.k)
-    sol.fit(X, colors, flets=True)
+    X = np.array(df.iloc[:, 1:])
+    logger.info(f"Processing data set {args.input}")
+    logger.info(
+        f"Running fair k-center with k={args.k} and n_colors={len(unique_colors)}"
+    )
+
+    sol = fk.Fairkcenter(args.k, flets=True)
+
+    sol.fit(X, colors, col_ratios=np.array([3, 1, 5]))
 
     res = solution_as_dict(sol)
     file_name = os.path.splitext(os.path.basename(args.input))[0]
@@ -120,5 +167,26 @@ if __name__ == "__main__":
         colors=colors,
         name=Path(f"plots/{file_name}_fairlets_{args.k}.png"),
     )
-    with open(f"results/{file_name}_{args.k}", "w") as file:
+    with open(f"results/{file_name}_{args.k}.json", "w") as file:
         json.dump(res, file, indent=4, cls=JsonEncoder)
+
+    """
+    #test the vanilla version
+    if color_numbers[0]==color_numbers[1]:
+        sol.fit(X, colors, flets=True, outlier=False)
+        res_vanilla = solution_as_dict(sol)
+        file_name = os.path.splitext(os.path.basename(args.input))[0]
+        plot_by_dict(
+            res=res_vanilla, X=X, colors=colors,
+            name=
+            Path(f"plots/{file_name}_{args.k}_vanilla.png")
+        )
+        plot_by_dict_fairlets(
+            res=res_vanilla,
+            X=X,
+            colors=colors,
+            name=Path(f"plots/{file_name}_fairlets_{args.k}_vanilla.png"),
+        )
+        with open(f"results/{file_name}_{args.k}_vanilla.json", "w") as file:
+            json.dump(res, file, indent=4, cls=JsonEncoder)
+    """

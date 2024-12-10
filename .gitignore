@@ -11,3 +11,10 @@ fair_kcenter/tests/plots/
 fair_kcenter/tests/results/
 fair_kcenter/tests/instances/
 setup.py
+*.in
+*.out
+*.txt
+*.json
+*.png
+*.log
+*.csv

@@ -9,97 +9,80 @@
 
 namespace fairclustering {
 
-double build_fairlets_vanilla(ClusteringProblem& p, Index red, Index blue) {
-    if(p.n_points(red)!=p.n_points(blue)){
-        throw std::invalid_argument("Number of points of given colors does not match. Try different ratio or version with outliers.");
-    }
-    Node s, t;
-    Graph* g = build_fairlet_graph(p, red, blue, &s, &t);
-    auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);
-    lemon::Preflow<Graph> preflow(*g, capacities, s, t);
+void pairwise_distances_flat(ClusteringProblem & p, std::vector<double>& dist){
+    std::vector<double> flat_dist(p.n()*p.n());
 
-    std::vector<double> distances = all_pairwise_distances_by_anc(p);
-    double min_r = std::numeric_limits<double>::max();
-    int left = 0;
-    int right = distances.size()-1;
-
-    double cap=distances.at(right);
-    while(left < right) {
-        int middle = (left + right) / 2;
-        update_capacities(p, g, distances.at(middle), red, blue, &capacities);
-        preflow.runMinCut();
-        if((unsigned int) preflow.flowValue() == p.n_points(red)) {
-            cap=distances.at(middle);
-            right = middle - 1;
-            min_r = distances.at(middle);
-        } else {
-            left = middle + 1;
-        }
-
-        if(left >= right){
-            break;
-        }
+    for(std::size_t i=0; i<p.n(); i++){
+        auto it=p.pairwise_distances(i);
+        flat_dist.insert(flat_dist.end(),it.begin(), it.end());
     }
 
-    update_capacities(p, g, cap, red, blue, &capacities);
-    preflow.runMinCut();
+    sort(flat_dist.begin(),flat_dist.end());
 
-    preflow.startSecondPhase();
-    set_buddies_from_flow(p, g, preflow.flowMap(), blue);
+    if(dist.size()!=0) dist.clear();
+    dist.reserve((p.n()*(p.n()-1))/2);
 
-    delete g;
-    return std::sqrt(min_r);
+    double curr_dist=flat_dist.at(0);
+    dist.push_back(curr_dist);
+    for(auto it: flat_dist){
+        if(curr_dist!=it){
+            dist.push_back(it);
+            curr_dist=it;
+        }
+    }
 }
 
-double build_fairlets_outlier(ClusteringProblem& p, Index red, Index blue) {
-    Node s, t;
-    Graph* g = build_fairlet_graph(p, red, blue, &s, &t);
-    auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);
-    lemon::Preflow<Graph> preflow(*g, capacities, s, t);
+double build_fairlets(ClusteringProblem& p) {
+    std::vector<double> distances;
+    pairwise_distances_flat(p, distances);
+    double max_rad_all_col=std::numeric_limits<double>::max();
+    for(std::size_t col=0; col<p.n_colors(); col++){
+        if(col==p.main_col()) continue;
+        Node s, t;
+        Graph* g = build_fairlet_graph(p, p.main_col(), col, &s, &t);
+        auto capacities = lemon::Preflow<Graph>::CapacityMap(*g, 1);
+        lemon::Preflow<Graph> preflow(*g, capacities, s, t);
 
-    std::vector<double> distances = all_pairwise_distances(p);
-    double min_r = std::numeric_limits<double>::max();
-    int left = 0;
-    int right = distances.size()-1;
+        double min_r = std::numeric_limits<double>::max();
+        int left = 0;
+        int right = distances.size()-1;
 
-    double cap=distances.at(right);
-    while(left < right) {
-        int middle = (left + right) / 2;
-        update_capacities(p, g, distances.at(middle), red, blue, &capacities);
+        double cap=distances.at(right);
+        while(left <= right) {
+            int middle = (left + right) / 2;
+            update_capacities(p, g, distances.at(middle), p.main_col(), col, &capacities, s);
+            preflow.runMinCut();
+            if((unsigned int) preflow.flowValue() == p.n_points(p.main_col())*p.color_ratio(col)) {
+                cap=distances.at(middle);
+                right = middle - 1;
+                min_r = distances.at(middle);
+            } else {
+                left = middle + 1;
+            }
+        }
+
+        update_capacities(p, g, cap, p.main_col(), col, &capacities, s);
         preflow.runMinCut();
-        if((unsigned int) preflow.flowValue() == p.n_points(red)) {
-            cap=distances.at(middle);
-            right = middle - 1;
-            min_r = distances.at(middle);
-        } else {
-            left = middle + 1;
-        }
 
-        if(left >= right){
-            break;
-        }
+        preflow.startSecondPhase();
+        set_buddies_from_flow(p, g, preflow.flowMap(), col);
+
+        delete g;
+        if(max_rad_all_col>min_r) max_rad_all_col=min_r;
     }
-
-    update_capacities(p, g, cap, red, blue, &capacities);
-    preflow.runMinCut();
-
-    preflow.startSecondPhase();
-    set_buddies_from_flow(p, g, preflow.flowMap(), blue);
-
-    delete g;
-    return std::sqrt(min_r);
+    return std::sqrt(max_rad_all_col);
 }
 
 Graph* init_graph(ClusteringProblem& p, Index red, Index blue, Node* s, Node* t){
     Graph* g = new Graph();
     g->reserveNode(p.n() + 2);
 
-    for(auto x : p.points()) {
+    for(std::size_t i=0; i<p.n(); i++) {
         g->addNode();
     }
 
-    *s = g->addNode(); // s has index n
-    *t = g->addNode(); // t has index n+1
+    *s = g->addNode(); // s has index n_red+n_blue
+    *t = g->addNode(); // t has index n_red+n_blue+1
 
     for(auto& x : p.points_of_color(red)) {
         g->addArc(*s, g->nodeFromId(x.idx()));
@@ -111,7 +94,6 @@ Graph* init_graph(ClusteringProblem& p, Index red, Index blue, Node* s, Node* t)
     return g;
 }
 
-//adds also edges between blue points
 Graph* build_fairlet_graph(ClusteringProblem& p, Index red, Index blue, Node* s, Node* t) {
     Graph* g = init_graph(p, red, blue, s, t);
 
@@ -127,12 +109,16 @@ Graph* build_fairlet_graph(ClusteringProblem& p, Index red, Index blue, Node* s,
 }
 
 
-void update_capacities(const ClusteringProblem& p, const Graph* g, double r, Index red, Index blue, lemon::Preflow<Graph>::CapacityMap* capacities) {
+void update_capacities(const ClusteringProblem& p, const Graph* g, double r, Index red, Index blue, lemon::Preflow<Graph>::CapacityMap* capacities, Node& s) {
+    std::size_t ratio=p.color_ratio(blue);
+    for(Graph::OutArcIt e(*g, s); e != lemon::INVALID; ++e) {
+        capacities->set(e, ratio);
+    }
     for(auto x : p.points_of_color(red)) {
         for(Graph::OutArcIt e(*g, g->nodeFromId(x.idx())); e != lemon::INVALID; ++e) {
             const int j = g->id(g->target(e));
 
-            if(sq_dist(x, p.points(j)) <= r) {
+            if(p.pairwise_distance(x.idx(), j) <= r) {
                 capacities->set(e, 1);
             }
             else {

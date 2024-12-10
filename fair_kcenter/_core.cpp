@@ -61,6 +61,7 @@ extern "C"
     void fairKCenter(
             double *array,
             std::size_t *colors,
+            std::size_t *color_ratio,
             std::size_t n,
             std::size_t d,
             std::size_t k,
@@ -68,29 +69,32 @@ extern "C"
             int *labels,
             double *centers,
             int *fairlets,
-            double* cost
+            double* cost,
+            bool outlier
         )
     {
-
         std::vector<int> number(nc, 0);
         // One vector of points per color
-
         fc::ClusteringProblem problem;
-        problem.read_input(array, colors, nc,  n, k, d);
+        problem.read_input(array, colors, nc, n, k, d, color_ratio, outlier);
 
-        const fc::Index red = (problem.n_points(0) <= problem.n_points(1) ? 0 : 1);
-        const fc::Index blue = 1 - red;
-
-        cost[0]=fc::build_fairlets(problem, red, blue);
+        cost[0]=fc::build_fairlets(problem);
         if(fairlets!=NULL){
             transformFairlets(fairlets, problem);
         }
 
-        auto gonz_centers = fc::gonzales(problem.points_of_color(red).begin(), problem.points_of_color(red).end(), problem.k());
-        cost[1] = problem.assign_points(gonz_centers);
+        std::vector<fc::Point*> gonz_centers;
+        if(outlier){
+            gonz_centers = fc::gonzales(problem.points_of_color(problem.main_col()).begin(), problem.points_of_color(problem.main_col()).end(), problem.k());
+            cost[1] = problem.assign_points(gonz_centers);
+        }
+        else{
+            gonz_centers = fc::gonzales(problem.points().begin(), problem.points().end(), problem.k());
+            cost[1] = problem.assign_points(gonz_centers);
+        }
 
-        transformCenters(centers, gonz_centers);
         transformLabels(labels, problem);
+        transformCenters(centers, gonz_centers);
         return;
     }
 } // extern "C"

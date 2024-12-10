@@ -95,8 +95,6 @@ class Point {
             _is_outlier = true;
         }
 
-
-
     private:
         std::vector<double> _coords;
         Index _color;
@@ -132,7 +130,7 @@ class ClusteringProblem {
             _k(0),
             _n_colors(0),
             _n_points_of_color(),
-            _ratio(1)
+            _main_col(0)
         {
         }
 
@@ -140,11 +138,11 @@ class ClusteringProblem {
             delete _points;
         }
 
-        void read_input(std::istream& is);
+        void read_input(std::istream& is, bool outlier=true);
 
-        void read_input(std::vector<std::vector<double>>& X, std::vector<std::size_t>& colors, std::size_t n_colors, std::size_t k, std::size_t ratio);
+        void read_input(const std::vector<std::vector<double>>& X, const std::vector<std::size_t>& colors, std::size_t n_colors, std::size_t k, const std::vector<std::size_t>& ratios=std::vector<std::size_t>(), bool outlier=true);
 
-        void read_input(double* X, std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t dim, std::size_t k, std::size_t ratio);
+        void read_input(const double* X, const std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim, const std::size_t* ratios=NULL, bool outlier=true);
 
         void sort_by_colors();
 
@@ -176,6 +174,10 @@ class ClusteringProblem {
             return _n_colors;
         }
 
+        std::size_t main_col() const {
+            return _main_col;
+        }
+
         std::size_t n_points(Index color) const {
             assert(color < _n_colors);
             return _n_points_of_color[color];
@@ -184,10 +186,25 @@ class ClusteringProblem {
         auto points_of_color(Index color) const {
             return std::span(_first_point_of_color[color], _n_points_of_color[color]);
         }
-        double assign_points(const std::vector<Point*>& centers);
+        double assign_points(std::vector<Point*>& centers);
+        std::pair<bool, double> center_update(std::vector<std::vector<Point*>>& fairlets, std::vector<Point*>& centers);
 
+        /*
         void set_ratio(std::size_t ratio){
             _ratio=ratio;
+        }*/
+
+       std::size_t color_ratio(Index color) const {
+            assert(color < _n_colors);
+            return _ratios[color];
+        }
+
+        double pairwise_distance (Index i, Index j) const{
+            return _pairwise_distances.at(i).at(j);
+        }
+
+        std::span<const double> pairwise_distances(Index i){
+            return std::span<const double>(_pairwise_distances.at(i).begin(), _pairwise_distances.at(i).end());
         }
 
     private:
@@ -197,10 +214,13 @@ class ClusteringProblem {
         std::size_t _n_colors;
         std::vector<PointSet::iterator> _first_point_of_color;
         std::vector<std::size_t> _n_points_of_color;
-        std::size_t _ratio; //clusters will have color-ratio 1:_ratio in the end, default 1:1
-};
+        std::vector<std::size_t> _ratios; //clusters will have color-ratio 1:_ratio in the end, default 1:1
+        std::vector<std::vector<double>> _pairwise_distances;
+        std::size_t _main_col;
 
-std::vector<double> all_pairwise_distances(ClusteringProblem& p);
+        void all_pairwise_distances();
+        void all_pairwise_distances_by_anc();
+};
 
 } // namespace fairclustering
 #endif

@@ -16,10 +16,12 @@ template<class iterator_t>
 std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
     std::vector<Point*> centers(k, nullptr);
     double max_dist = 0.0;
+    int i=0;
     for(auto x=begin; x != end; ++x) {
-        if(x->buddy() != nullptr) continue;
+        i++;
+        //if(x->buddy() != nullptr) continue;
         for(auto y=x+1; y != end; ++y) {
-            if(y->buddy() != nullptr) continue;
+            //if(y->buddy() != nullptr) continue;
 
             const double pq_dist = sq_dist(*x, *y);
             if(pq_dist > max_dist) {
@@ -33,6 +35,7 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
     centers[0]->assign_cluster(0);
     centers[1]->assign_cluster(1);
 
+
     // choose center number c: Find point whose minimum distance to all fixed centers is maximal
     // among those points that:
     // - are not themselves fixed centers
@@ -43,7 +46,7 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
         // for all points, check distance to all fixed centers
         for(auto x=begin; x != end; ++x) {
             if(    x->cluster() != Point::not_assigned
-                || x->buddy() != nullptr
+                //|| x->buddy() != nullptr
             ) {
                 continue;
             }
@@ -63,7 +66,6 @@ std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
                 centers[c] = &(*x);
             }
         }
-
         centers[c]->assign_cluster(c);
     }
 
