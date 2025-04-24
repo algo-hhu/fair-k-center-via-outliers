@@ -110,13 +110,13 @@ def plot_by_dict_fairlets(
 def solution_as_dict(sol: fk.Fairkcenter) -> Dict:
     result = {
         "cost": sol.inertia_,
-        "fairlet_cost": sol.inertia_fairlets,
+        "fairlet_cost": sol.inertia_fairlets_,
         "n_clusters": sol.n_clusters,
         "centers": sol.cluster_centers_,
         "labels": sol.labels_,
     }
-    if sol.fairlets is not None:
-        result.update({"fairlets": sol.fairlets})
+    if sol.fairlets_ is not None:
+        result.update({"fairlets": sol.fairlets_})
     return result
 
 
