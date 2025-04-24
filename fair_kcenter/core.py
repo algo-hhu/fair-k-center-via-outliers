@@ -2,6 +2,7 @@ import ctypes
 import logging
 
 import numpy as np
+from typing import Optional
 
 import fair_kcenter._core  # type: ignore
 
@@ -12,9 +13,12 @@ logger = logging.getLogger(__name__)
 class Fairkcenter:
     def __init__(
         self,
-        n_clusters: int,
-        flets: bool = False,
-        outlier: bool = True,
+        n_clusters: int,            #number of clusters
+        flets: bool = False,        #if set to true the algortihm also stores the fairlet labeling
+        
+        #in case of two colors: if set to false, an algorithm for the special case of two colors ratio 1:1 and no outliers is performed, it has better theoretical approximation guraantee
+        #in case of more than two colors: should always be set to True
+        outlier: bool = True,        
     ):
         self.n_clusters = n_clusters
         self._flets = flets
@@ -24,11 +28,12 @@ class Fairkcenter:
         self,
         X: np.ndarray,
         col: np.ndarray,
-        col_ratios: np.ndarray[int] = None,
+        col_ratios: np.ndarray=None,
         auto_ratios: bool = False,
     ) -> "Fairkcenter":
         if not isinstance(X, np.ndarray) or not isinstance(X, np.ndarray):
             raise ValueError("X must be a numpy array")
+        
         logger.info(
             "Compute fair k-center clusterig on dataset of shape"
             f"{X.shape} with k={self.n_clusters}"
@@ -41,23 +46,30 @@ class Fairkcenter:
 
         self._col_names, col_sizes = np.unique(col, return_counts=True)
         self._n_samples = X.shape[0]
+        
+        if self._n_samples < self.n_clusters:
+            raise ValueError(
+                f"n_samples={self._n_samples} should be >= n_clusters={self.n_clusters}."
+            )
+        
         logger.info(f"Absolute distribution of colors {col_sizes}")
-        self._n_col = self._col_names.shape[0]
+        self._n_col = int(self._col_names.max())+1
 
         if col_ratios is not None:
             if auto_ratios:
                 logger.info(
                     "Use provided color ratios, automatic ratio setting will be ignored"
                 )
-            if np.all(col_ratios > 0):
-                self._col_ratios = col_ratios.astype(int)
-                if not np.issubdtype(col_ratios.dtype, np.integer):
-                    logger.info(
-                        f"Datatype of col_ratios {col_ratios.dtype} is convrerted to "
-                        f"{np.integer}, col_ratio is now {self._col_ratios}"
-                    )
             else:
-                raise ValueError("Color ratios must be positive integers")
+                if np.all(col_ratios > 0):
+                    self._col_ratios = col_ratios.astype(int)
+                    if not np.issubdtype(col_ratios.dtype, np.integer):
+                        logger.info(
+                            f"Datatype of col_ratios {col_ratios.dtype} is convrerted to "
+                            f"{np.integer}, col_ratio is now {self._col_ratios}"
+                        )
+                else:
+                    raise ValueError("Color ratios must be positive integers")
         else:
             if auto_ratios:
                 logger.info("Set ratios atomatically")
@@ -87,24 +99,20 @@ class Fairkcenter:
         logger.info(f"Number of colors is set to {self._n_col}")
         if self._col_ratios is not None and self._n_col != self._col_ratios.shape[0]:
             raise ValueError(
-                f"provided color ratios n_samples={self._n_samples} should be "
-                f">= n_clusters={self.n_clusters}."
+                f"provided color ratios of length={self._col_ratios.shape[0]} unequal "
+                f"number of colors={self._n_col}."
             )
         self._n_features_in_ = X.shape[1]
 
         # assign every color a number betwenn 0 and n_col-1
         self._col = np.zeros(self._n_samples, dtype=int)
         for i, name in enumerate(self._col_names):
-            self._col[col == name] = i
-
-        if self._n_samples < self.n_clusters:
-            raise ValueError(
-                f"n_samples={self._n_samples} should be >= n_clusters={self.n_clusters}."
-            )
-        if self._n_samples < self.n_clusters:
-            raise ValueError(
-                f"n_samples={self._n_samples} should be >= n_clusters={self.n_clusters}."
-            )
+            pts = col == name
+            self._col[pts] = i
+            if self._col_ratios[i]==1 and np.sum(pts)<self.n_clusters:
+                raise ValueError(
+                    f"Not enough points of color={name} to obtain n_clusters={self.n_clusters}."
+                )
 
         self._X = np.ascontiguousarray(X.astype(np.float64))
 
@@ -151,11 +159,11 @@ class Fairkcenter:
         cost = np.ctypeslib.as_array(c_cost)
 
         self.inertia_ = cost[1]
-        self.inertia_fairlets = cost[0]
+        self.inertia_fairlets_ = cost[0]
 
         logger.info(
             f"Found solution with radius {self.inertia_} "
-            f"and fairlet radius of {self.inertia_fairlets}"
+            f"and fairlet radius of {self.inertia_fairlets_}"
         )
 
         self.cluster_centers_ = np.ctypeslib.as_array(
@@ -163,9 +171,8 @@ class Fairkcenter:
         )
 
         self.labels_ = np.ctypeslib.as_array(c_labels)
-        self.fairlets = None
-        if c_fairlets is not None:
-            self.fairlets = np.ctypeslib.as_array(c_fairlets)
-        self.n_features_out = len(self.cluster_centers_)
+        self.fairlets_ = None
+        if self._flets:
+            self.fairlets_ = np.ctypeslib.as_array(c_fairlets)
 
         return self
