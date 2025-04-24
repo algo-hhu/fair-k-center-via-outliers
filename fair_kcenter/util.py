@@ -1,6 +1,8 @@
 import json
-import numpy as np
 from typing import Any
+
+import numpy as np
+
 
 class JsonEncoder(json.JSONEncoder):
     def default(self, obj: Any) -> Any:
@@ -11,4 +13,3 @@ class JsonEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(JsonEncoder, self).default(obj)
-

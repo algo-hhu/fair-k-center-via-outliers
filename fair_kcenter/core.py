@@ -2,7 +2,6 @@ import ctypes
 import logging
 
 import numpy as np
-from typing import Optional
 
 import fair_kcenter._core  # type: ignore
 
@@ -13,12 +12,9 @@ logger = logging.getLogger(__name__)
 class Fairkcenter:
     def __init__(
         self,
-        n_clusters: int,            #number of clusters
-        flets: bool = False,        #if set to true the algortihm also stores the fairlet labeling
-        
-        #in case of two colors: if set to false, an algorithm for the special case of two colors ratio 1:1 and no outliers is performed, it has better theoretical approximation guraantee
-        #in case of more than two colors: should always be set to True
-        outlier: bool = True,        
+        n_clusters: int,
+        flets: bool = False,
+        outlier: bool = True,
     ):
         self.n_clusters = n_clusters
         self._flets = flets
@@ -28,12 +24,12 @@ class Fairkcenter:
         self,
         X: np.ndarray,
         col: np.ndarray,
-        col_ratios: np.ndarray=None,
+        col_ratios: np.ndarray = None,
         auto_ratios: bool = False,
     ) -> "Fairkcenter":
         if not isinstance(X, np.ndarray) or not isinstance(X, np.ndarray):
             raise ValueError("X must be a numpy array")
-        
+
         logger.info(
             "Compute fair k-center clusterig on dataset of shape"
             f"{X.shape} with k={self.n_clusters}"
@@ -46,14 +42,14 @@ class Fairkcenter:
 
         self._col_names, col_sizes = np.unique(col, return_counts=True)
         self._n_samples = X.shape[0]
-        
+
         if self._n_samples < self.n_clusters:
             raise ValueError(
                 f"n_samples={self._n_samples} should be >= n_clusters={self.n_clusters}."
             )
-        
+
         logger.info(f"Absolute distribution of colors {col_sizes}")
-        self._n_col = int(self._col_names.max())+1
+        self._n_col = int(self._col_names.max()) + 1
 
         if col_ratios is not None:
             if auto_ratios:
@@ -109,7 +105,7 @@ class Fairkcenter:
         for i, name in enumerate(self._col_names):
             pts = col == name
             self._col[pts] = i
-            if self._col_ratios[i]==1 and np.sum(pts)<self.n_clusters:
+            if self._col_ratios[i] == 1 and np.sum(pts) < self.n_clusters:
                 raise ValueError(
                     f"Not enough points of color={name} to obtain n_clusters={self.n_clusters}."
                 )
