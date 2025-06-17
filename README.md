@@ -39,6 +39,10 @@ If the dataset has no underlying color ratio of this form, one can pass a desire
   If set to True and no col_ratios are given the ratios are picked automatically in the following way. First the color with the fewest number of points $m$ is determined. For every color we determine the number of points of this color $m'$ and set the respective ratio to $\lfloor\frac{m'}{m}\rfloor$.
   If neither `auto_ratios` is set to True nor `col_ratios` is passed, the color ratios are set to $1:1:...:1$.
 
+## Third-Party Libraries
+
+This project includes the [LEMON C++ graph library](https://lemon.cs.elte.hu/), which is licensed under the Boost Software License 1.0.  
+See `fair_kcenter/cpp/lemon/LICENSE` for full license text.
 
 ## Usage
 
