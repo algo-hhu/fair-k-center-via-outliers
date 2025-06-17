@@ -2,8 +2,8 @@
 
 #include "clusteringproblem.h"
 
-#include <lemon/smart_graph.h>
-#include <lemon/preflow.h>
+#include "lemon/smart_graph.h"
+#include "lemon/preflow.h"
 
 #include <cmath>
 

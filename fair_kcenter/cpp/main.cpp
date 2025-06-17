@@ -2,8 +2,8 @@
 #include "gonzales.h"
 #include "fairlets.h"
 
-#include <lemon/smart_graph.h>
-#include <lemon/preflow.h>
+#include "lemon/smart_graph.h"
+#include "lemon/preflow.h"
 
 #include <iostream>
 #include <vector>

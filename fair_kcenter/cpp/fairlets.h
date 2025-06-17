@@ -2,9 +2,10 @@
 #define FC_FAIRLETS_H_
 
 #include "clusteringproblem.h"
+#include "lemon/smart_graph.h"
+#include "lemon/preflow.h"
+
 #include <stdexcept>
-#include <lemon/smart_graph.h>
-#include <lemon/preflow.h>
 
 namespace fairclustering {
 
