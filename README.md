@@ -46,6 +46,15 @@ See `fair_kcenter/cpp/lemon/LICENSE` for full license text.
 
 ## Usage
 
+Before installing the package, make sure you have a C++ compiler and Python development headers installed.
+
+To install Python development headers on **Ubuntu / WSL**, run:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential python3-dev
+```
+
 Install [poetry](https://python-poetry.org/docs/#installation)
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
