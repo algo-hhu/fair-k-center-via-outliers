@@ -1,0 +1,25 @@
+import numpy as np
+
+
+def balance_by_sampling(X: np.ndarray, y: np.ndarray, seed: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    unique, counts = np.unique(y, return_counts=True)
+    min_count = counts.min()
+
+    keep_indices = []
+    for label in unique:
+        indices = np.where(y == label)[0]
+        chosen = rng.choice(indices, size=min_count, replace=False)
+        keep_indices.append(chosen)
+
+    keep_indices = np.sort(np.concatenate(keep_indices))
+    return X[keep_indices], y[keep_indices]
+
+
+# X = np.array([[0,1,2],[1,2,3],[2,3,4],[3,4,5],[4,5,6],[5,6,7],[6,7,8]])
+# y = np.array([0, 1, 0, 1, 0, 0, 2])
+
+# X_balanced, y_balanced = balance_by_sampling(X, y)
+
+# print("Balanced X:", X_balanced)
+# print("Balanced y:", y_balanced)
