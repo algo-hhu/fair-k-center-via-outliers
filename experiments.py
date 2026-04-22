@@ -33,7 +33,13 @@ def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_
     for i in range(num_iterations):
         X_sub, col_sub = subsampling_uniform(X, col, subsample_size, seed=4711+i)
 
-        # print(f"Subsample size: {subsample_size}, color distribution: {np.bincount(col_sub)}")
+
+    # call fair kcenter
+    kcenter = fk.Fairkcenter(
+        n_clusters=n_clusters,
+        flets=with_fairlet_labels,
+        without_anchors=not with_anchors
+    )
 
         if force_balance:
             X, col = balance_by_sampling(X, col, 4711-i)

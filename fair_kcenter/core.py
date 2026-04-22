@@ -14,11 +14,11 @@ class Fairkcenter:
         self,
         n_clusters: int,
         flets: bool = False,
-        outlier: bool = True,
+        without_anchors: bool = True,
     ):
         self.n_clusters = n_clusters
         self._flets = flets
-        self._outlier = outlier
+        self._without_anchors = without_anchors
 
     def fit(
         self,
@@ -35,8 +35,9 @@ class Fairkcenter:
             f"{X.shape} with k={self.n_clusters}"
         )
 
-        if not self._outlier:
-            logger.info("Compute solution without outliers")
+        if not self._without_anchors:
+            logger.info("Compute solution with anchors")
+
         if self._flets:
             logger.info("Store fairlet assignment")
 
@@ -80,17 +81,18 @@ class Fairkcenter:
 
         logger.info(f"Color ratios are set to {self._col_ratios}")
 
-        if not self._outlier:
+        if not self._without_anchors:
             if self._n_col > 2:
                 raise ValueError(
-                    f"{self._n_col} colors provided but non-outlier version "
+                    f"{self._n_col} colors provided but anchor version "
                     "is only available with 2 colors."
                 )
-            if self._col_ratios is not None and self._col_ratios != np.array([1, 1]):
-                raise ValueError(
-                    f"color ratios {self._col_ratios} provided "
-                    "but non-outlier version only allows a 1:1 color ratio."
-                )
+            if self._col_ratios is not None:
+                if len(self._col_ratios) != 2 or not np.all(self._col_ratios == 1):
+                    raise ValueError(
+                        f"color ratios {self._col_ratios} provided "
+                        "but anchor version only allows a 1:1 color ratio."
+                    )
 
         logger.info(f"Number of colors is set to {self._n_col}")
         if self._col_ratios is not None and self._n_col != self._col_ratios.shape[0]:
@@ -127,7 +129,7 @@ class Fairkcenter:
         c_nc = ctypes.c_size_t(self._n_col)
         c_labels = (ctypes.c_int32 * self._n_samples)()
         c_cost = (ctypes.c_double * 2)()
-        c_out = ctypes.c_bool(self._outlier)
+        c_without_anchors = ctypes.c_bool(self._without_anchors)
         if self._flets:
             c_fairlets = (ctypes.c_int32 * self._n_samples)()
         else:
@@ -149,7 +151,7 @@ class Fairkcenter:
             c_centers,
             c_fairlets,
             c_cost,
-            c_out,
+            c_without_anchors,
         )
 
         cost = np.ctypeslib.as_array(c_cost)

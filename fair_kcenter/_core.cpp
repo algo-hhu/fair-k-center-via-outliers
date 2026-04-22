@@ -70,13 +70,13 @@ extern "C"
             double *centers,
             int *fairlets,
             double* cost,
-            bool outlier
+            bool without_anchors
         )
     {
         std::vector<int> number(nc, 0);
         // One vector of points per color
         fc::ClusteringProblem problem;
-        problem.read_input(array, colors, nc, n, k, d, color_ratio, outlier);
+        problem.read_input(array, colors, nc, n, k, d, color_ratio, without_anchors);
 
         cost[0]=fc::build_fairlets(problem);
         if(fairlets!=NULL){
@@ -84,7 +84,7 @@ extern "C"
         }
 
         std::vector<fc::Point*> gonz_centers;
-        if(outlier){
+        if(without_anchors){
             gonz_centers = fc::gonzales(problem.points_of_color(problem.main_col()).begin(), problem.points_of_color(problem.main_col()).end(), problem.k());
             cost[1] = problem.assign_points(gonz_centers);
         }
