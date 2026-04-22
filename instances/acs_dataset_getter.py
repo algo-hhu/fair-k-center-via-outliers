@@ -16,4 +16,4 @@ data = data_source.get_data(states=[state], download=True)
 X, y, _ = ACSIncome.df_to_pandas(data)
 
 X.to_csv(year + "_" + horizon + "_" + survey + "_" + state + "_features.csv", index=False)
-y.to_csv(year + "_" + horizon + "_" + survey + "_" + state + "_labels.csv", index=False)
+#y.to_csv(year + "_" + horizon + "_" + survey + "_" + state + "_labels.csv", index=False)
