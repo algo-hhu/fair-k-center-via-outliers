@@ -1,0 +1,6 @@
+27816 White  100
+3124  Black  12
+1039  Asian  4
+311   Amer   1
+271   Other  1
+
