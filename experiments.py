@@ -5,7 +5,7 @@ import pandas as pd
 import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
 
-from subsampling import balance_by_sampling
+from subsampling import balance_by_sampling, subsampling_uniform
 
 datasets = {
     "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": [], "subsample": 1000},
@@ -14,7 +14,7 @@ datasets = {
     "income": {"file": "acs_income_2018_1-Year_person_CA_features_processed", "critical_attribute": "SEX", "exclude_columns": [], "subsample": 1000}
 }
 
-def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_anchors, normalize, subsample):
+def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_anchors, normalize, subsample, force_balance):
     ds = datasets[dataset]
 
     suffix = "-normalized" if normalize else ""
@@ -26,7 +26,10 @@ def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_
     X = df.drop(columns=ds["critical_attribute"]).to_numpy()
 
     if subsample:
-        X, col = balance_by_sampling(X, col, 4711)
+        X, col = subsampling_uniform(X, col, ds["subsample"], seed=4711)
+
+    if force_balance:
+        X, col = balance_by_sampling(X, col, 4712)
 
     # call fair kcenter
     kcenter = fk.Fairkcenter(
@@ -89,6 +92,13 @@ def parse_cli():
         action="store_true",
         default=False,
         help="Use a random subsample of the data (default: False)."
+    )
+
+    parser.add_argument(
+        "--force-balance",
+        action="store_true",
+        default=False,
+        help="Subsample dataset to have 1:1:...:1 ratio"
     )
     
     return parser.parse_args()
