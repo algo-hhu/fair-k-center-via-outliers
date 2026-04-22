@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
-python process_bank.py
-python process_bank.py --normalize
+python3 acs_dataset_getter.py
 
-python process_census.py
-python process_census.py --normalize
+python3 process_bank.py
+python3 process_bank.py --normalize
 
-python process_diabetes.py
-python process_diabetes.py --normalize
+python3 process_census.py
+python3 process_census.py --normalize
 
-python process_income.py
+python3 process_diabetes.py
+python3 process_diabetes.py --normalize
+
+python3 process_income.py
