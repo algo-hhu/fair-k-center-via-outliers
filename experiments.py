@@ -1,5 +1,6 @@
 import argparse
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import fair_kcenter as fk
@@ -29,37 +30,46 @@ def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_
     #     X, col = subsampling_uniform(X, col, ds["subsample"], seed=4711)
     
     costs = np.empty(num_iterations)
+    costs_chierichetti = np.empty(num_iterations)
 
     for i in range(num_iterations):
-        X_sub, col_sub = subsampling_uniform(X, col, subsample_size, seed=4711+i)
+        X_i, col_i = X, col
+
+        if subsample:
+            X_i, col_i = subsampling_uniform(X_i, col_i, ds["subsample"], seed=4711+i)
 
 
-    # call fair kcenter
-    kcenter = fk.Fairkcenter(
-        n_clusters=n_clusters,
-        flets=with_fairlet_labels,
-        without_anchors=not with_anchors
-    )
 
-        if force_balance:
-            X, col = balance_by_sampling(X, col, 4711-i)
-
-        # call fair kcenter
         kcenter = fk.Fairkcenter(
             n_clusters=n_clusters,
             flets=with_fairlet_labels,
+            without_anchors=True
         )
 
         kcenter.fit(
-            X=X,
-            col=col,
+            X=X_i,
+            col=col_i,
             col_ratios=np.array(color_ratios)
         )
 
-        assigned_centers = kcenter.cluster_centers_[kcenter.labels_]
-        costs[i] = np.max(np.linalg.norm(X - assigned_centers, axis=1))
+        costs[i] = kcenter.inertia_
 
-    return costs.mean()
+        X_i, col_i = balance_by_sampling(X_i, col_i, 4711-i)
+        kcenter = fk.Fairkcenter(
+            n_clusters=n_clusters,
+            flets=with_fairlet_labels,
+            without_anchors=False
+        )
+
+        kcenter.fit(
+            X=X_i,
+            col=col_i,
+            col_ratios=np.array([1,1])
+        )
+
+        costs_chierichetti[i] = kcenter.inertia_
+
+    return costs.mean(), costs_chierichetti.mean()
 
 def parse_cli():
     parser = argparse.ArgumentParser("Call fair k-center code.")
@@ -119,7 +129,20 @@ N_CLUSTERS = [2, 3, 5, 10]
 if __name__ == "__main__":
     args = parse_cli()
     kwargs = vars(args)
+
+    mean_costs, mean_costs_chierichetti = [], []
     for n_clusters in N_CLUSTERS:
-        mean_cost = run_experiment(n_clusters=n_clusters, **kwargs)
-        print(f"n_clusters={n_clusters}: mean cost = {mean_cost}")
+        mean_cost, mean_cost_chierichetti = run_experiment(n_clusters=n_clusters, **kwargs)
+        print(f"n_clusters={n_clusters}: mean cost = {mean_cost}, mean cost (Chierichetti) = {mean_cost_chierichetti}")
+        mean_costs.append(mean_cost)
+        mean_costs_chierichetti.append(mean_cost_chierichetti)
+
+    plt.plot(N_CLUSTERS, mean_costs, marker="o", label="Fair k-center")
+    plt.plot(N_CLUSTERS, mean_costs_chierichetti, marker="o", label="Chierichetti")
+    plt.xlabel("k")
+    plt.ylabel("Mean clustering cost")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(f"results_{args.dataset}.png", dpi=150)
+    plt.show()
 
