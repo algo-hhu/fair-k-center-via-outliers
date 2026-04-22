@@ -8,3 +8,5 @@ python process_census.py --normalize
 
 python process_diabetes.py
 python process_diabetes.py --normalize
+
+python process_income.py
