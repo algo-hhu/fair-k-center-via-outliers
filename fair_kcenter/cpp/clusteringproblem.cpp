@@ -187,7 +187,7 @@ void ClusteringProblem::sort_by_colors(){
     }
 }
 
-void ClusteringProblem::read_input(std::istream& is, bool outlier) {
+void ClusteringProblem::read_input(std::istream& is, bool without_anchors) {
     std::size_t n;
     is >> n >> _dim >> _k >> _n_colors;
 
@@ -223,19 +223,23 @@ void ClusteringProblem::read_input(std::istream& is, bool outlier) {
             throw std::invalid_argument("Color-ratios can not be achieved.");
         }
     }
+
     sort_by_colors();
-    if(outlier){
+    
+    if(without_anchors){
         all_pairwise_distances();
     }
-    else if(_n_colors!=2){
-        throw std::invalid_argument("Fair k-center clustering without outliers only supported for 2 colors.");
-    }
-    else{
-        all_pairwise_distances_by_anc();
+    else {
+        if(_n_colors==2){
+            all_pairwise_distances_by_anc();
+        }
+        else {
+            throw std::invalid_argument("Fair k-center clustering with anchors only supported for 2 colors.");
+        }
     }
 }
 
-void ClusteringProblem::read_input(const std::vector<std::vector<double>>& X, const std::vector<size_t>& colors, std::size_t n_colors, std::size_t k, const std::vector<std::size_t>& ratios, bool outlier) {
+void ClusteringProblem::read_input(const std::vector<std::vector<double>>& X, const std::vector<size_t>& colors, std::size_t n_colors, std::size_t k, const std::vector<std::size_t>& ratios, bool without_anchors) {
     std::size_t n=X.size();
     _dim=X[0].size();
     _k=k;
@@ -289,18 +293,20 @@ void ClusteringProblem::read_input(const std::vector<std::vector<double>>& X, co
 
     sort_by_colors();
 
-    if(outlier){
+    if(without_anchors){
         all_pairwise_distances();
     }
-    else if(_n_colors!=2){
-        throw std::invalid_argument("Fair k-center clustering without outliers only supported for 2 colors.");
-    }
-    else{
-        all_pairwise_distances_by_anc();
+    else {
+        if(_n_colors==2){
+            all_pairwise_distances_by_anc();
+        }
+        else {
+            throw std::invalid_argument("Fair k-center clustering with anchors only supported for 2 colors.");
+        }
     }
 }
 
-void ClusteringProblem::read_input(const double* X, const std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim, const std::size_t* ratios, bool outlier) {
+void ClusteringProblem::read_input(const double* X, const std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim, const std::size_t* ratios, bool without_anchors) {
     _dim=dim;
     _k=k;
     _n_colors=n_colors;
@@ -353,14 +359,16 @@ void ClusteringProblem::read_input(const double* X, const std::size_t* colors, s
 
     sort_by_colors();
 
-    if(outlier){
+    if(without_anchors){
         all_pairwise_distances();
     }
-    else if(_n_colors!=2){
-        throw std::invalid_argument("Fair k-center clustering without outliers only supported for 2 colors.");
-    }
-    else{
-        all_pairwise_distances_by_anc();
+    else {
+        if(_n_colors==2){
+            all_pairwise_distances_by_anc();
+        }
+        else {
+            throw std::invalid_argument("Fair k-center clustering with anchors only supported for 2 colors.");
+        }
     }
 }
 

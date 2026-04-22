@@ -138,11 +138,11 @@ class ClusteringProblem {
             delete _points;
         }
 
-        void read_input(std::istream& is, bool outlier=true);
+        void read_input(std::istream& is, bool without_anchors=true);
 
-        void read_input(const std::vector<std::vector<double>>& X, const std::vector<std::size_t>& colors, std::size_t n_colors, std::size_t k, const std::vector<std::size_t>& ratios=std::vector<std::size_t>(), bool outlier=true);
+        void read_input(const std::vector<std::vector<double>>& X, const std::vector<std::size_t>& colors, std::size_t n_colors, std::size_t k, const std::vector<std::size_t>& ratios=std::vector<std::size_t>(), bool without_anchors=true);
 
-        void read_input(const double* X, const std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim, const std::size_t* ratios=NULL, bool outlier=true);
+        void read_input(const double* X, const std::size_t* colors, std::size_t n_colors, std::size_t n, std::size_t k, std::size_t dim, const std::size_t* ratios=NULL, bool without_anchors=true);
 
         void sort_by_colors();
 
