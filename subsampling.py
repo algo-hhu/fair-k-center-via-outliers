@@ -37,3 +37,13 @@ def subsampling_uniform(X: np.ndarray, y: np.ndarray, num_samples: int, seed: in
 
 # print("Sampled X:", X_sampled)
 # print("Sampled y:", y_sampled)
+
+def subsampling_fair(X: np.ndarray, y: np.ndarray, num_samples: int, seed: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    unique, counts = np.unique(y, return_counts=True)
+    num_classes = len(unique)
+    count_per_point = counts[np.searchsorted(unique, y)]
+    weights = 1.0 / (count_per_point * num_classes)
+    indices = rng.choice(len(X), size=num_samples, replace=False, p=weights)
+    indices = np.sort(indices)
+    return X[indices], y[indices]
