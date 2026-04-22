@@ -87,11 +87,12 @@ class Fairkcenter:
                     f"{self._n_col} colors provided but anchor version "
                     "is only available with 2 colors."
                 )
-            if self._col_ratios is not None and self._col_ratios != np.array([1, 1]):
-                raise ValueError(
-                    f"color ratios {self._col_ratios} provided "
-                    "but anchor version only allows a 1:1 color ratio."
-                )
+            if self._col_ratios is not None:
+                if len(self._col_ratios) != 2 or not np.all(self._col_ratios == 1):
+                    raise ValueError(
+                        f"color ratios {self._col_ratios} provided "
+                        "but anchor version only allows a 1:1 color ratio."
+                    )
 
         logger.info(f"Number of colors is set to {self._n_col}")
         if self._col_ratios is not None and self._n_col != self._col_ratios.shape[0]:

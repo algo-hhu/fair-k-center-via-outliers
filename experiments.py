@@ -35,6 +35,7 @@ def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_
     kcenter = fk.Fairkcenter(
         n_clusters=n_clusters,
         flets=with_fairlet_labels,
+        without_anchors=not with_anchors
     )
 
     kcenter.fit(
