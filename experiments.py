@@ -5,7 +5,7 @@ import pandas as pd
 import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
 
-from remove_outliers_randomly import balance_by_sampling
+from subsampling import balance_by_sampling
 
 datasets = {
     "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": [], "subsample": 1000},
