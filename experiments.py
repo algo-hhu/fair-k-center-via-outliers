@@ -8,24 +8,25 @@ from fair_kcenter.util import JsonEncoder
 from remove_outliers_randomly import balance_by_sampling
 
 datasets = {
-    "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": []},
-    "census": {"file": "census_processed", "critical_attribute": "age", "exclude_columns": []},
-    "diabetes": {"file": "diabetes_processed", "critical_attribute": "age", "exclude_columns": []},
-    "income": {"file": "acs_income_2018_1-Year_person_CA_features", "critical_attribute": "age", "exclude_columns": []}
+    "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": [], "subsample": 1000},
+    "census": {"file": "census_processed", "critical_attribute": "sex", "exclude_columns": [], "subsample": 600},
+    "diabetes": {"file": "diabetes_processed", "critical_attribute": "gender", "exclude_columns": [], "subsample": 1000},
+    "income": {"file": "acs_income_2018_1-Year_person_CA_features_processed", "critical_attribute": "SEX", "exclude_columns": [], "subsample": 1000}
 }
 
-def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_anchors, normalize):
+def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_anchors, normalize, subsample):
     ds = datasets[dataset]
 
     suffix = "-normalized" if normalize else ""
     df = pd.read_csv(f"instances/{ds['file']}{suffix}.csv")
-    df = df.drop(columns=ds["exclude_columns"]).iloc[:100]
+    df = df.drop(columns=ds["exclude_columns"])
         
     # --- Split into X and col ---
     col = df[ds["critical_attribute"]].to_numpy()
     X = df.drop(columns=ds["critical_attribute"]).to_numpy()
 
-    X_bal, col_bal = balance_by_sampling(X, col, 4711)
+    if subsample:
+        X, col = balance_by_sampling(X, col, 4711)
 
     # call fair kcenter
     kcenter = fk.Fairkcenter(
@@ -34,8 +35,8 @@ def run_experiment(dataset, color_ratios, n_clusters, with_fairlet_labels, with_
     )
 
     kcenter.fit(
-        X=X_bal,
-        col=col_bal,
+        X=X,
+        col=col,
         col_ratios=np.array(color_ratios)
     )
 
@@ -81,6 +82,13 @@ def parse_cli():
         action="store_true",
         default=False,
         help="Use normalized data (default: False).",
+    )
+
+    parser.add_argument(
+        "--subsample",
+        action="store_true",
+        default=False,
+        help="Use a random subsample of the data (default: False)."
     )
     
     return parser.parse_args()
