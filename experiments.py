@@ -14,10 +14,12 @@ from subsampling import balance_by_sampling, subsampling_uniform, ratio_balance_
 from cluster_cost_plot import cluster_cost_plot 
 
 datasets = {
-    "bank":     {"file_prefix": "bank",                                          "critical_attribute": "married", "exclude_columns": ["row_id"]},
-    "census":   {"file_prefix": "census",                                        "critical_attribute": "sex",     "exclude_columns": ["row_id", "race"]},
-    "diabetes": {"file_prefix": "diabetes",                                      "critical_attribute": "gender",  "exclude_columns": ["row_id", "race"]},
-    "income":   {"file_prefix": "acs_income_2018_1-Year_person_CA_features",     "critical_attribute": "SEX",     "exclude_columns": ["row_id"]}
+    "bank":         {"data_dir": "bank",     "file_prefix": "bank",                                          "critical_attribute": "married", "exclude_columns": ["row_id"]},
+    "census":       {"data_dir": "census",   "file_prefix": "census",                                        "critical_attribute": "sex",     "exclude_columns": ["row_id", "race"]},
+    "diabetes":     {"data_dir": "diabetes", "file_prefix": "diabetes",                                      "critical_attribute": "gender",  "exclude_columns": ["row_id", "race"]},
+    "income":       {"data_dir": "income",   "file_prefix": "acs_income_2018_1-Year_person_CA_features",     "critical_attribute": "SEX",     "exclude_columns": ["row_id"]},
+    "censusrace":   {"data_dir": "census",   "file_prefix": "census",                                        "critical_attribute": "race",    "exclude_columns": ["row_id", "sex"]},
+    "diabetesrace": {"data_dir": "diabetes", "file_prefix": "diabetes",                                      "critical_attribute": "race",    "exclude_columns": ["row_id", "gender"]}
 }
 
 #N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
@@ -81,7 +83,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
     our_fairlet_cost = []
     ref_fairlet_cost = []
 
-    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{ds['file_prefix']}_processed_*.csv")):
+    for filename in sorted(Path(f"instances/normalized/{ds['data_dir']}/subsamples/cut").glob(f"{ds['file_prefix']}_processed_*.csv")):
         df = pd.read_csv(filename)
         df = df.drop(columns=ds["exclude_columns"])
             
@@ -116,8 +118,8 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
 
         # Then cluster with Chierichetti's approach 
         ref_without_anchors = True
-        if len(ideal_ratios) == 2 and ideal_ratios[0] == 1 and ideal_ratios[1] == 1:
-            ref_without_anchors = False
+        # if len(ideal_ratios) == 2 and ideal_ratios[0] == 1 and ideal_ratios[1] == 1:
+        #     ref_without_anchors = False
 
         X_balanced, col_balanced = ratio_balance_by_sampling(X, col, ratios=np.array(ideal_ratios, dtype=int), seed=seed)
 
@@ -142,7 +144,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
         
         if outfile:
             with open(outfile, "a") as f:
-                f.write(f"{dataset};{filename};{n_clusters};{seed};{true_ratios};{ideal_ratios};{our_cost[-1]};{ref_cost[-1]};{our_fairlet_cost[-1]};{ref_fairlet_cost[-1]};{cpu_us};{cpu_ref}\n")
+                f.write(f"{dataset};{filename};{ds['critical_attribute']};{n_clusters};{seed};{true_ratios};{ideal_ratios};{our_cost[-1]};{ref_cost[-1]};{our_fairlet_cost[-1]};{ref_fairlet_cost[-1]};{cpu_us};{cpu_ref}\n")
 
         seed += 1
 
@@ -200,7 +202,7 @@ if __name__ == "__main__":
     logger.info(f"Plots will be written to '{plot_file}'.")
 
     with open(result_file, "a") as f:
-        f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu\n")
+        f.write(f"dataset;subsample;color;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu\n")
 
     our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed, result_file)
     cluster_cost_plot(result_file, plot_file)
