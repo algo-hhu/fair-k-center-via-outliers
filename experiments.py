@@ -10,8 +10,8 @@ from subsampling import balance_by_sampling, subsampling_uniform
 
 datasets = {
     "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": [], "subsample": 1000},
-    "census": {"file": "census_processed", "critical_attribute": "sex", "exclude_columns": [], "subsample": 600},
-    "diabetes": {"file": "diabetes_processed", "critical_attribute": "gender", "exclude_columns": [], "subsample": 1000},
+    "census": {"file": "census_processed", "critical_attribute": "sex", "exclude_columns": ["race"], "subsample": 600},
+    "diabetes": {"file": "diabetes_processed", "critical_attribute": "gender", "exclude_columns": ["race"], "subsample": 1000},
     "income": {"file": "acs_income_2018_1-Year_person_CA_features_processed", "critical_attribute": "SEX", "exclude_columns": [], "subsample": 1000}
 }
 

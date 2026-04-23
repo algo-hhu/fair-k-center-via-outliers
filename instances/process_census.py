@@ -13,11 +13,21 @@ df = pd.read_csv(
 )
 
 # --- Keep all numerical columns + sex ---
-cols = ["sex", "age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
+cols = ["sex", "race", "age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
 df = df[cols]
 
 # --- Encode sex column: Male -> 0, Female -> 1 ---
 df["sex"] = df["sex"].str.strip().str.lower().map({"male": 0, "female": 1}).astype(int)
+
+# --- Encode race column ---
+df["race"] = df["race"].str.strip().str.lower().map({
+    "other": 0,
+    "amer-indian-eskimo": 1,
+    "asian-pac-islander": 2,
+    "black": 3,
+    "white": 4
+}).astype(int)
+
 
 # --- Discard rows with any NaN values ---
 rows_before = len(df)

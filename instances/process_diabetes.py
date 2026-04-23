@@ -15,7 +15,7 @@ df = pd.read_csv(
 # --- Keep relevant columns ---
 # Note: max_glu_serum and A1Cresult are categorical (e.g. '>300', 'Norm') and are excluded
 cols = [
-    "gender", "age",
+    "gender", "age", "race",
     "admission_type_id", "discharge_disposition_id", "admission_source_id",
     "time_in_hospital", "num_lab_procedures", "num_procedures",
     "num_medications", "number_outpatient", "number_emergency",
@@ -41,6 +41,16 @@ df["age"] = df["age"].map(age_map)
 
 # --- Encode gender column: Male -> 0, Female -> 1 (unknown values become NaN) ---
 df["gender"] = df["gender"].str.strip().str.lower().map({"male": 0, "female": 1})
+
+# --- Encode race column ---
+df["race"] = df["race"].str.strip().str.lower().map({
+    "asian": 0,
+    "other": 1,
+    "?": 2,
+    "hispanic": 3,
+    "africanamerican": 4,
+    "caucasian": 5
+}).astype(int)
 
 # --- Convert diag_1/2/3 to numeric, coercing non-numerical values to NaN ---
 df["diag_1"] = pd.to_numeric(df["diag_1"], errors="coerce")
