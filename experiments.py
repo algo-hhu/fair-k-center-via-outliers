@@ -200,7 +200,7 @@ if __name__ == "__main__":
     logger.info(f"Plots will be written to '{plot_file}'.")
 
     with open(result_file, "a") as f:
-        f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu;\n")
+        f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu\n")
 
     our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed, result_file)
     cluster_cost_plot(result_file, plot_file)
