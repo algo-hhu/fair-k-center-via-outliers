@@ -24,6 +24,8 @@ df["married"] = df["marital"].str.strip().str.lower().map(
 # --- Drop the original marital column ---
 df = df.drop(columns=["marital"])
 
+critical_cols = ["married"]
+
 # --- Discard rows with any NaN values ---
 rows_before = len(df)
 df = df.dropna()
@@ -31,7 +33,7 @@ rows_after = len(df)
 print(f"Discarded {rows_before - rows_after} rows with non-numerical values ({rows_after} remaining)")
 
 # --- Normalize all numerical columns to [-1, 1] ---
-num_cols = [c for c in df.columns if c != "married"]
+num_cols = [c for c in df.columns if c not in critical_cols]
 
 if args.normalize:
     for col in num_cols:

@@ -12,8 +12,10 @@ df = pd.read_csv("acs_income_2018_1-Year_person_CA_features.csv")
 # --- Encode SEX column: 1.0 -> 0, 2.0 -> 1 ---
 df["SEX"] = df["SEX"].map({1.0: 0, 2.0: 1}).astype(int)
 
+critical_cols = ["SEX"]
+
 # --- Normalize all numerical columns to [-1, 1] ---
-num_cols = [c for c in df.columns if c != "SEX"]
+num_cols = [c for c in df.columns if c not in critical_cols]
 
 if args.normalize:
     for col in num_cols:

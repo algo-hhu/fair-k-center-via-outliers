@@ -12,3 +12,4 @@ python3 process_diabetes.py
 python3 process_diabetes.py --normalize
 
 python3 process_income.py
+python3 process_income.py --normalize

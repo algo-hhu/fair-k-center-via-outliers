@@ -24,6 +24,8 @@ cols = [
 ]
 df = df[cols]
 
+critical_cols = ["gender", "race"]
+
 # --- Map age intervals to numerical categories ---
 age_map = {
     "[0-10)":   0,
@@ -67,7 +69,7 @@ print(f"Discarded {rows_before - rows_after} rows with non-numerical values ({ro
 df["gender"] = df["gender"].astype(int)
 
 # --- Normalize all numerical columns to [-1, 1] ---
-num_cols = [c for c in df.columns if c != "gender"]
+num_cols = [c for c in df.columns if c not in critical_cols]
 
 if args.normalize:
     for col in num_cols:

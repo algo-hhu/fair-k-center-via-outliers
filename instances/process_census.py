@@ -16,6 +16,8 @@ df = pd.read_csv(
 cols = ["sex", "race", "age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
 df = df[cols]
 
+critical_cols = ["sex", "race"]
+
 # --- Encode sex column: Male -> 0, Female -> 1 ---
 df["sex"] = df["sex"].str.strip().str.lower().map({"male": 0, "female": 1}).astype(int)
 
@@ -36,7 +38,7 @@ rows_after = len(df)
 print(f"Discarded {rows_before - rows_after} rows with non-numerical values ({rows_after} remaining)")
 
 # --- Normalize all numerical columns to [-1, 1] ---
-num_cols = [c for c in df.columns if c != "sex"]
+num_cols = [c for c in df.columns if c not in critical_cols]
 
 if args.normalize:
     for col in num_cols:
