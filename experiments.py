@@ -23,8 +23,8 @@ datasets = {
     "diabetesrace": {"data_dir": "diabetes", "file_prefix": "diabetes",                                      "critical_attribute": "race",    "exclude_columns": ["row_id", "gender"]}
 }
 
-#N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
-N_CLUSTERS = [1, 2, 5, 10, 20, 30, 40, 50, 100]
+N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50, 100]
+#N_CLUSTERS = [1, 2, 5, 10, 20, 30, 40, 50, 100]
 SEED = int(datetime.now().timestamp())
 LOG_DIR = Path("logs") / "cluster_cost"
 PLOT_DIR = Path("plots") / "cluster_cost"
