@@ -11,9 +11,10 @@ df = pd.read_csv(
     "ba-krollmann/bank-normalized.csv",
     skipinitialspace=True,
 )
+df["row_id"] = df.index
 
 # --- Keep all numerical columns + marital ---
-cols = ["marital", "age", "balance", "day", "duration", "campaign", "pdays", "previous"]
+cols = ["row_id", "marital", "age", "balance", "day", "duration", "campaign", "pdays", "previous"]
 df = df[cols]
 
 # --- Add married column based on marital status ---
@@ -24,7 +25,7 @@ df["married"] = df["marital"].str.strip().str.lower().map(
 # --- Drop the original marital column ---
 df = df.drop(columns=["marital"])
 
-critical_cols = ["married"]
+critical_cols = ["row_id", "married"]
 
 # --- Discard rows with any NaN values ---
 rows_before = len(df)

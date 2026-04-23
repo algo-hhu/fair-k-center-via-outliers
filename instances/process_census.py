@@ -11,12 +11,13 @@ df = pd.read_csv(
     "ba-krollmann/census-normalized.csv",
     skipinitialspace=True,  # strips leading spaces after commas
 )
+df["row_id"] = df.index
 
 # --- Keep all numerical columns + sex ---
-cols = ["sex", "race", "age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
+cols = ["row_id", "sex", "race", "age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
 df = df[cols]
 
-critical_cols = ["sex", "race"]
+critical_cols = ["row_id", "sex", "race"]
 
 # --- Encode sex column: Male -> 0, Female -> 1 ---
 df["sex"] = df["sex"].str.strip().str.lower().map({"male": 0, "female": 1}).astype(int)

@@ -11,11 +11,12 @@ df = pd.read_csv(
     "ba-krollmann/diabetes-normalized.csv",
     skipinitialspace=True,
 )
+df["row_id"] = df.index
 
 # --- Keep relevant columns ---
 # Note: max_glu_serum and A1Cresult are categorical (e.g. '>300', 'Norm') and are excluded
 cols = [
-    "gender", "age", "race",
+    "row_id", "gender", "age", "race",
     "admission_type_id", "discharge_disposition_id", "admission_source_id",
     "time_in_hospital", "num_lab_procedures", "num_procedures",
     "num_medications", "number_outpatient", "number_emergency",
@@ -24,7 +25,7 @@ cols = [
 ]
 df = df[cols]
 
-critical_cols = ["gender", "race"]
+critical_cols = ["row_id", "gender", "race"]
 
 # --- Map age intervals to numerical categories ---
 age_map = {

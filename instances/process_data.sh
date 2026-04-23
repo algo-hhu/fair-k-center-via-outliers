@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-python3 acs_dataset_getter.py
+if [ ! -f "acs_income_2018_1-Year_person_CA_features.csv" ]; then
+    python3 acs_dataset_getter.py
+fi
 
 python3 process_bank.py
 python3 process_bank.py --normalize
