@@ -14,6 +14,13 @@ namespace fairclustering {
  */
 template<class iterator_t>
 std::vector<Point*> gonzales(iterator_t begin, iterator_t end, std::size_t k) {
+    if(k == 1) {
+        std::vector<Point*> centers(1, nullptr);
+        centers[0] = &(*begin);
+        centers[0]->assign_cluster(0);
+        return centers;
+    }   
+    
     std::vector<Point*> centers(k, nullptr);
     double max_dist = 0.0;
     int i=0;

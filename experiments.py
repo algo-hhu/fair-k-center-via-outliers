@@ -42,6 +42,7 @@ def get_cpu_time(start, stop):
     
     return user_cpu + sys_cpu
 
+
 def _setup_logger() -> logging.Logger:
     log_dir = LOG_DIR
     log_dir.mkdir(exist_ok=True)
@@ -64,6 +65,13 @@ def _setup_logger() -> logging.Logger:
 
 logger = _setup_logger()
 
+
+def log_current_git_commit():
+    try:
+        commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+        logger.info(f"Currently at git commit: {commit_hash}")
+    except Exception as e:
+        logger.warning(f"Could not retrieve git commit hash: {e}")
 
 
 def find_true_color_ratios(col: np.ndarray) -> list[int]:   
@@ -100,50 +108,65 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
 
         logger.info(f"Subsample {n_subsamples_processed:05}/{len(instances)} [{filename.name}, k={n_clusters}]: True ratios: {true_ratios}, ideal ratios: {ideal_ratios}")
 
-        start_us = get_r_usage()
-        kcenter_us = fk.Fairkcenter(
-            n_clusters=n_clusters,
-            flets=True,
-            without_anchors=True
-        )
+        try:
+            start_us = get_r_usage()
+            kcenter_us = fk.Fairkcenter(
+                n_clusters=n_clusters,
+                flets=True,
+                without_anchors=True
+            )
 
-        kcenter_us.fit(
-            X=X,
-            col=col,
-            col_ratios=np.array(ideal_ratios)
-        )
-        stop_us = get_r_usage()
-        cpu_us = get_cpu_time(start_us, stop_us)
-        logger.info(f"Clustered in {cpu_us:.2f} seconds (user+sys CPU time).")
+            kcenter_us.fit(
+                X=X,
+                col=col,
+                col_ratios=np.array(ideal_ratios)
+            )
+  
+            stop_us = get_r_usage()
+            cpu_us = get_cpu_time(start_us, stop_us)
+            logger.info(f"Clustered in {cpu_us:.2f} seconds (user+sys CPU time).")
 
-        our_cost.append(kcenter_us.inertia_)
-        our_fairlet_cost.append(kcenter_us.inertia_fairlets_)
+            our_cost.append(kcenter_us.inertia_)
+            our_fairlet_cost.append(kcenter_us.inertia_fairlets_)
 
-        # Then cluster with Chierichetti's approach 
-        ref_without_anchors = True
-        # if len(ideal_ratios) == 2 and ideal_ratios[0] == 1 and ideal_ratios[1] == 1:
-        #     ref_without_anchors = False
+            # Then cluster with Chierichetti's approach 
+            ref_without_anchors = True
+            # if len(ideal_ratios) == 2 and ideal_ratios[0] == 1 and ideal_ratios[1] == 1:
+            #     ref_without_anchors = False
 
-        X_balanced, col_balanced = ratio_balance_by_sampling(X, col, ratios=np.array(ideal_ratios, dtype=int), seed=seed)
+            X_balanced, col_balanced = ratio_balance_by_sampling(X, col, ratios=np.array(ideal_ratios, dtype=int), seed=seed)
 
-        start_ref = get_r_usage()
-        kcenter_ref = fk.Fairkcenter(
-            n_clusters=n_clusters,
-            flets=True,
-            without_anchors=ref_without_anchors
-        )
+            start_ref = get_r_usage()
+            kcenter_ref = fk.Fairkcenter(
+                n_clusters=n_clusters,
+                flets=True,
+                without_anchors=ref_without_anchors
+            )
 
-        kcenter_ref.fit(
-            X=X_balanced,
-            col=col_balanced,
-            col_ratios=np.array(ideal_ratios)
-        )
-        stop_ref = get_r_usage()
-        cpu_ref = get_cpu_time(start_ref, stop_ref)
-        logger.info(f"Reference clustered in {cpu_ref:.2f} seconds (user+sys CPU time).")
-        
-        ref_cost.append(kcenter_ref.inertia_)
-        ref_fairlet_cost.append(kcenter_ref.inertia_fairlets_)
+            kcenter_ref.fit(
+                X=X_balanced,
+                col=col_balanced,
+                col_ratios=np.array(ideal_ratios)
+            )
+            stop_ref = get_r_usage()
+            cpu_ref = get_cpu_time(start_ref, stop_ref)
+            logger.info(f"Reference clustered in {cpu_ref:.2f} seconds (user+sys CPU time).")
+            
+            ref_cost.append(kcenter_ref.inertia_)
+            ref_fairlet_cost.append(kcenter_ref.inertia_fairlets_)
+
+        except ValueError as e:
+            logger.warning(f"Skipping subsample {filename.name} for k={n_clusters} due to error: {e}")
+            logger.warning(f"(This likely means that there are not enough points of a certain color to form the requested number of clusters with the given ratios.)")
+
+            stop_us = get_r_usage()
+            cpu_us = get_cpu_time(start_us, stop_us)
+            cpu_ref = 0.0
+            
+            our_cost.append(float('nan'))
+            our_fairlet_cost.append(float('nan'))
+            ref_cost.append(float('nan'))
+            ref_fairlet_cost.append(float('nan'))
         
         if outfile:
             with open(outfile, "a") as f:
@@ -209,12 +232,7 @@ if __name__ == "__main__":
     logger.info(f"Excluding columns {datasets[args.dataset]['exclude_columns']}.")
     logger.info(f"Results will be written to '{result_file}'.")
     logger.info(f"Plots will be written to '{plot_file}'.")
-    
-    try:
-        commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-        logger.info(f"Currently at git commit: {commit_hash}")
-    except Exception as e:
-        logger.warning(f"Could not retrieve git commit hash: {e}")
+    log_current_git_commit()    
 
     with open(result_file, "a") as f:
         f.write(f"dataset;subsample;color;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu\n")
