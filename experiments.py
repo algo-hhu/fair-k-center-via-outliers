@@ -25,7 +25,7 @@ datasets = {
 
 #N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
 N_CLUSTERS = [1, 2, 5, 10, 20, 30, 40, 50, 100]
-SEED = 51503
+SEED = int(datetime.now().timestamp())
 LOG_DIR = Path("logs") / "cluster_cost"
 PLOT_DIR = Path("plots") / "cluster_cost"
 
@@ -201,7 +201,9 @@ if __name__ == "__main__":
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(PLOT_DIR, exist_ok=True)
 
+    seed = args.seed if args.seed else SEED
     logger.info(f"Starting experiment with arguments: {kwargs} at time {start}...")
+    logger.info(f"Using random seed {seed}.")
     logger.info(f"Running with cluster sizes {N_CLUSTERS}.")
     logger.info(f"Using {datasets[args.dataset]['critical_attribute']} as color column.")
     logger.info(f"Excluding columns {datasets[args.dataset]['exclude_columns']}.")
@@ -217,7 +219,7 @@ if __name__ == "__main__":
     with open(result_file, "a") as f:
         f.write(f"dataset;subsample;color;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu\n")
 
-    our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed, result_file)
+    our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, seed, result_file)
     cluster_cost_plot(result_file, plot_file)
 
     stop = get_timestamp()
