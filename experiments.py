@@ -1,4 +1,6 @@
 import argparse
+from datetime import datetime
+import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,23 +19,57 @@ datasets = {
     "income": {"file": "acs_income_2018_1-Year_person_CA_features_processed", "critical_attribute": "SEX", "exclude_columns": ["row_id"], "subsample": 1000}
 }
 
-N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
+#N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
+N_CLUSTERS = [2]
 SEED = 51503
+LOG_DIR = Path("logs") / "cluster_cost"
+PLOT_DIR = Path("plots") / "cluster_cost"
+
+
+def get_timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+def _setup_logger() -> logging.Logger:
+    log_dir = LOG_DIR
+    log_dir.mkdir(exist_ok=True)
+    log_file = log_dir / f"run_normalized_cut_{get_timestamp()}.log"
+
+    logger = logging.getLogger("experiments")
+    logger.setLevel(logging.DEBUG)
+
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+
+    fh = logging.FileHandler(log_file)
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
+
+    ch = logging.StreamHandler()
+    ch.setFormatter(fmt)
+    logger.addHandler(ch)
+
+    return logger
+
+logger = _setup_logger()
+
+
 
 def find_true_color_ratios(col: np.ndarray) -> list[int]:
-    _, counts = np.unique(col, return_counts=True)
-    return counts
+    colors, counts = np.unique(col, return_counts=True)
+    sorted_colors = np.argsort(colors)
+    return [counts[i] for i in sorted_colors]
     
 def round_color_ratios_to_minority_color(ratios: list[int]) -> list[int]:
     min_ratio = min(ratios)
     return [int(r // min_ratio) for r in ratios]
 
-def run_experiment_fixed_cluster_size(dataset, n_clusters, seed):
+def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
     ds = datasets[dataset]
 
     our_cost = []
     ref_cost = []
-    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv")):
+    our_fairlet_cost = []
+    ref_fairlet_cost = []
+    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv"))[0:1]:
         df = pd.read_csv(filename)
         df = df.drop(columns=ds["exclude_columns"])
             
@@ -45,7 +81,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed):
         true_ratios = find_true_color_ratios(col)
         ideal_ratios = round_color_ratios_to_minority_color(true_ratios)
 
-        print(f"Subsample {filename.name}: True ratios: {true_ratios}, ideal ratios: {ideal_ratios}")
+        logger.info(f"Subsample {filename.name}: True ratios: {true_ratios}, ideal ratios: {ideal_ratios}")
 
         kcenter_us = fk.Fairkcenter(
             n_clusters=n_clusters,
@@ -60,6 +96,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed):
         )
 
         our_cost.append(kcenter_us.inertia_)
+        our_fairlet_cost.append(kcenter_us.inertia_fairlets_)
 
         # Then cluster with Chierichetti's approach 
         ref_without_anchors = True
@@ -80,24 +117,30 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed):
         )
 
         ref_cost.append(kcenter_ref.inertia_)
+        ref_fairlet_cost.append(kcenter_ref.inertia_fairlets_)
+        
+        if outfile:
+            with open(outfile, "a") as f:
+                f.write(f"{dataset};{filename};{n_clusters};{seed};{true_ratios};{ideal_ratios};{our_cost[-1]};{ref_cost[-1]};{our_fairlet_cost[-1]};{ref_fairlet_cost[-1]};\n")
 
         seed += 1
-        
 
-    return our_cost, ref_cost
+    return our_cost, ref_cost, our_fairlet_cost, ref_fairlet_cost
 
-def run_experiment(dataset, cluster_sizes, seed):
-    our_costs, ref_costs = [], []
+def run_experiment(dataset, cluster_sizes, seed, outfile=None):
+    our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = [], [], [], []
     for n_clusters in cluster_sizes:
-        our_cost, ref_cost = run_experiment_fixed_cluster_size(dataset, n_clusters, seed)
+        our_cost, ref_cost, our_fairlet_cost, ref_fairlet_cost = run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=outfile)
         our_costs.append(our_cost)
         ref_costs.append(ref_cost)
-        print(f"{dataset} | {n_clusters} clusters | our cost = {our_cost}, ref cost = {ref_cost}")
+        our_fairlet_costs.append(our_fairlet_cost)
+        ref_fairlet_costs.append(ref_fairlet_cost)
+        logger.info(f"{dataset} | {n_clusters} clusters | our cost = {our_cost}, ref cost = {ref_cost}")
         seed += len(our_cost)
 
-    return our_costs, ref_costs
+    return our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs
 
-def plot_experiment_results(dataset, cluster_sizes, our_costs, ref_costs):
+def plot_experiment_results(dataset, cluster_sizes, our_costs, ref_costs, plotfile):  
     our_min  = [np.min(c)  for c in our_costs]
     our_max  = [np.max(c)  for c in our_costs]
     our_mean = [np.mean(c) for c in our_costs]
@@ -120,10 +163,8 @@ def plot_experiment_results(dataset, cluster_sizes, our_costs, ref_costs):
     plt.xticks(ticks=cluster_sizes, labels=[str(k) for k in cluster_sizes], fontsize=12)
     plt.yticks(fontsize=12)
     plt.tight_layout()
-    plot_path = f"plots/cluster_cost/"
-    os.makedirs(plot_path, exist_ok=True)
-    plt.savefig(f"{plot_path}/cost_{dataset}_normalized_cut.pdf", dpi=300, bbox_inches="tight")
-    plt.show()
+
+    plt.savefig(plotfile, dpi=300, bbox_inches="tight")
 
 def parse_cli():
     parser = argparse.ArgumentParser("Call fair k-center code.")
@@ -140,55 +181,31 @@ def parse_cli():
         default=SEED,
         help=f"Random seed for subsampling (default: {SEED}).",
     )
-    # parser.add_argument(
-    #     "color_ratios",
-    #     type=int,
-    #     nargs="+",
-    #     help="List of integers specifying ratios.",
-    # )
- 
-    # parser.add_argument(
-    #     "--with-fairlet-labels",
-    #     action="store_true",
-    #     default=False,
-    #     help="Print fairlet labels (default: False).",
-    # )
-    
-    # parser.add_argument(
-    #     "--with-anchors",
-    #     action="store_true",
-    #     default=False,
-    #     help="Use anchors for fairlets  (default: anchors disabled).",
-    # )
-    
-    # parser.add_argument(
-    #     "--normalize",
-    #     action="store_true",
-    #     default=False,
-    #     help="Use normalized data (default: False).",
-    # )
 
-    # parser.add_argument(
-    #     "--subsample",
-    #     action="store_true",
-    #     default=False,
-    #     help="Use a random subsample of the data (default: False)."
-    # )
-
-    # parser.add_argument(
-    #     "--force-balance",
-    #     action="store_true",
-    #     default=False,
-    #     help="Subsample dataset to have 1:1:...:1 ratio"
-    # )
-    
     return parser.parse_args()
 
 
 
 if __name__ == "__main__":
-    args = parse_cli()
-    kwargs = vars(args)
+    args        = parse_cli()
+    kwargs      = vars(args)
+    start       = get_timestamp()
+    result_file = LOG_DIR / f"results_{args.dataset}_normalized_cut_{start}.csv"
+    plot_file   = PLOT_DIR / f"cost_{args.dataset}_normalized_cut_{start}.pdf"
 
-    our_costs, ref_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed)
-    plot_experiment_results(args.dataset, N_CLUSTERS, our_costs, ref_costs)
+    os.makedirs(LOG_DIR, exist_ok=True)
+    os.makedirs(PLOT_DIR, exist_ok=True)
+
+    logger.info(f"Starting experiment with arguments: {kwargs} at time {start}...")
+    logger.info(f"Running with cluster sizes {N_CLUSTERS}.")
+    logger.info(f"Results will be written to '{result_file}'.")
+    logger.info(f"Plots will be written to '{plot_file}'.")
+
+    with open(result_file, "a") as f:
+        f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost\n")
+
+    our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed, result_file)
+    plot_experiment_results(args.dataset, N_CLUSTERS, our_costs, ref_costs, plot_file)
+
+    stop = get_timestamp()
+    logger.info(f"Experiment completed at time {stop}.") 
