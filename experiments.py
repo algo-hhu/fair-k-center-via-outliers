@@ -14,10 +14,10 @@ from subsampling import balance_by_sampling, subsampling_uniform, ratio_balance_
 from cluster_cost_plot import cluster_cost_plot 
 
 datasets = {
-    "bank":     {"critical_attribute": "married", "exclude_columns": ["row_id"]},
-    "census":   {"critical_attribute": "sex",     "exclude_columns": ["row_id", "race"]},
-    "diabetes": {"critical_attribute": "gender",  "exclude_columns": ["row_id", "race"]},
-    "income":   {"critical_attribute": "SEX",     "exclude_columns": ["row_id"]}
+    "bank":     {"file_prefix": "bank",                                          "critical_attribute": "married", "exclude_columns": ["row_id"]},
+    "census":   {"file_prefix": "census",                                        "critical_attribute": "sex",     "exclude_columns": ["row_id", "race"]},
+    "diabetes": {"file_prefix": "diabetes",                                      "critical_attribute": "gender",  "exclude_columns": ["row_id", "race"]},
+    "income":   {"file_prefix": "acs_income_2018_1-Year_person_CA_features",     "critical_attribute": "SEX",     "exclude_columns": ["row_id"]}
 }
 
 #N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
@@ -81,7 +81,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
     our_fairlet_cost = []
     ref_fairlet_cost = []
 
-    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv")):
+    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{ds['file_prefix']}_processed_*.csv")):
         df = pd.read_csv(filename)
         df = df.drop(columns=ds["exclude_columns"])
             
