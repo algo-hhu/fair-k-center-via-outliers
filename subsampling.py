@@ -33,7 +33,7 @@ def ratio_balance_by_sampling(X: np.ndarray, y: np.ndarray, ratios: np.ndarray, 
     keep_indices = []
     for label, ratio in zip(unique, ratios):
         indices = np.where(y == label)[0]
-        chosen = rng.choice(indices, size=t * ratio, replace=False)
+        chosen = rng.choice(indices, size=int(t * ratio), replace=False)
         keep_indices.append(chosen)
 
     keep_indices = np.sort(np.concatenate(keep_indices))
