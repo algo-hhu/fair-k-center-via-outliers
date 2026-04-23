@@ -35,9 +35,10 @@ num_cols = [c for c in df.columns if c != "married"]
 
 if args.normalize:
     for col in num_cols:
-        col_min = df[col].min()
-        col_max = df[col].max()
-        df[col] = 2 * (df[col] - col_min) / (col_max - col_min) - 1
+        col_centered = df[col] - df[col].mean()
+        col_min = col_centered.min()
+        col_max = col_centered.max()
+        df[col] = 2 * (col_centered - col_min) / (col_max - col_min) - 1
 
 print(df.head())
 print("\nData types:")
