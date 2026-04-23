@@ -8,6 +8,7 @@ import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
 from pathlib import Path
 import os
+import resource
 
 from subsampling import balance_by_sampling, subsampling_uniform, ratio_balance_by_sampling
 from cluster_cost_plot import cluster_cost_plot 
@@ -28,6 +29,15 @@ PLOT_DIR = Path("plots") / "cluster_cost"
 
 def get_timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+def get_r_usage():
+    return resource.getrusage(resource.RUSAGE_SELF)
+
+def get_cpu_time(start, stop):
+    user_cpu = stop.ru_utime - start.ru_utime
+    sys_cpu = stop.ru_stime - start.ru_stime
+    
+    return user_cpu + sys_cpu
 
 def _setup_logger() -> logging.Logger:
     log_dir = LOG_DIR
@@ -70,7 +80,8 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
     ref_cost = []
     our_fairlet_cost = []
     ref_fairlet_cost = []
-    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv"))[0:10]:
+
+    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv")):
         df = pd.read_csv(filename)
         df = df.drop(columns=ds["exclude_columns"])
             
@@ -84,6 +95,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
 
         logger.info(f"Subsample {filename.name}: True ratios: {true_ratios}, ideal ratios: {ideal_ratios}")
 
+        start_us = get_r_usage()
         kcenter_us = fk.Fairkcenter(
             n_clusters=n_clusters,
             flets=True,
@@ -95,6 +107,9 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
             col=col,
             col_ratios=np.array(ideal_ratios)
         )
+        stop_us = get_r_usage()
+        cpu_us = get_cpu_time(start_us, stop_us)
+        logger.info(f"Clustered in {cpu_us:.2f} seconds (user+sys CPU time).")
 
         our_cost.append(kcenter_us.inertia_)
         our_fairlet_cost.append(kcenter_us.inertia_fairlets_)
@@ -105,6 +120,8 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
             ref_without_anchors = False
 
         X_balanced, col_balanced = ratio_balance_by_sampling(X, col, ratios=np.array(ideal_ratios, dtype=int), seed=seed)
+
+        start_ref = get_r_usage()
         kcenter_ref = fk.Fairkcenter(
             n_clusters=n_clusters,
             flets=True,
@@ -116,13 +133,16 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
             col=col_balanced,
             col_ratios=np.array(ideal_ratios)
         )
-
+        stop_ref = get_r_usage()
+        cpu_ref = get_cpu_time(start_ref, stop_ref)
+        logger.info(f"Reference clustered in {cpu_ref:.2f} seconds (user+sys CPU time).")
+        
         ref_cost.append(kcenter_ref.inertia_)
         ref_fairlet_cost.append(kcenter_ref.inertia_fairlets_)
         
         if outfile:
             with open(outfile, "a") as f:
-                f.write(f"{dataset};{filename};{n_clusters};{seed};{true_ratios};{ideal_ratios};{our_cost[-1]};{ref_cost[-1]};{our_fairlet_cost[-1]};{ref_fairlet_cost[-1]};\n")
+                f.write(f"{dataset};{filename};{n_clusters};{seed};{true_ratios};{ideal_ratios};{our_cost[-1]};{ref_cost[-1]};{our_fairlet_cost[-1]};{ref_fairlet_cost[-1]};{cpu_us};{cpu_ref}\n")
 
         seed += 1
 
@@ -180,7 +200,7 @@ if __name__ == "__main__":
     logger.info(f"Plots will be written to '{plot_file}'.")
 
     with open(result_file, "a") as f:
-        f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost\n")
+        f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu;\n")
 
     our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed, result_file)
     cluster_cost_plot(result_file, plot_file)
