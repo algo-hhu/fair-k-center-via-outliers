@@ -11,6 +11,7 @@ from pathlib import Path
 import os
 
 from subsampling import balance_by_sampling, subsampling_uniform, ratio_balance_by_sampling
+from cluster_cost_plot import cluster_cost_plot 
 
 datasets = {
     "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": ["row_id"], "subsample": 1000},
@@ -20,7 +21,7 @@ datasets = {
 }
 
 #N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
-N_CLUSTERS = [2]
+N_CLUSTERS = [1, 2, 5, 10, 20, 50, 100]
 SEED = 51503
 LOG_DIR = Path("logs") / "cluster_cost"
 PLOT_DIR = Path("plots") / "cluster_cost"
@@ -63,13 +64,14 @@ def round_color_ratios_to_minority_color(ratios: list[int]) -> list[int]:
     return [int(r // min_ratio) for r in ratios]
 
 def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
+    logger.info(f"--- Subexperiment for k={n_clusters}...")
     ds = datasets[dataset]
 
     our_cost = []
     ref_cost = []
     our_fairlet_cost = []
     ref_fairlet_cost = []
-    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv"))[0:1]:
+    for filename in sorted(Path(f"instances/normalized/{dataset}/subsamples/cut").glob(f"{dataset}_processed_*.csv"))[0:10]:
         df = pd.read_csv(filename)
         df = df.drop(columns=ds["exclude_columns"])
             
@@ -140,31 +142,31 @@ def run_experiment(dataset, cluster_sizes, seed, outfile=None):
 
     return our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs
 
-def plot_experiment_results(dataset, cluster_sizes, our_costs, ref_costs, plotfile):  
-    our_min  = [np.min(c)  for c in our_costs]
-    our_max  = [np.max(c)  for c in our_costs]
-    our_mean = [np.mean(c) for c in our_costs]
-    ref_min  = [np.min(c)  for c in ref_costs]
-    ref_max  = [np.max(c)  for c in ref_costs]
-    ref_mean = [np.mean(c) for c in ref_costs]
+# def plot_experiment_results(dataset, cluster_sizes, our_costs, ref_costs, plotfile):  
+#     our_min  = [np.min(c)  for c in our_costs]
+#     our_max  = [np.max(c)  for c in our_costs]
+#     our_mean = [np.mean(c) for c in our_costs]
+#     ref_min  = [np.min(c)  for c in ref_costs]
+#     ref_max  = [np.max(c)  for c in ref_costs]
+#     ref_mean = [np.mean(c) for c in ref_costs]
 
-    plt.figure(figsize=(10, 6))
+#     plt.figure(figsize=(10, 6))
 
-    plt.plot(cluster_sizes, our_mean, marker="o", label="our method (mean)", linewidth=2, markersize=8, color="tab:blue")
-    plt.fill_between(cluster_sizes, our_min, our_max, alpha=0.2, color="tab:blue", label="our method (min–max)")
+#     plt.plot(cluster_sizes, our_mean, marker="o", label="our method (mean)", linewidth=2, markersize=8, color="tab:blue")
+#     plt.fill_between(cluster_sizes, our_min, our_max, alpha=0.2, color="tab:blue", label="our method (min–max)")
 
-    plt.plot(cluster_sizes, ref_mean, marker="s", label="chierichetti method (mean)", linewidth=2, markersize=8, color="tab:orange")
-    plt.fill_between(cluster_sizes, ref_min, ref_max, alpha=0.2, color="tab:orange", label="chierichetti method (min–max)")
+#     plt.plot(cluster_sizes, ref_mean, marker="s", label="chierichetti method (mean)", linewidth=2, markersize=8, color="tab:orange")
+#     plt.fill_between(cluster_sizes, ref_min, ref_max, alpha=0.2, color="tab:orange", label="chierichetti method (min–max)")
 
-    plt.xlabel("Number of clusters", fontsize=14)
-    plt.ylabel("Cluster cost", fontsize=14)
-    plt.title(f"Cluster cost comparison on {dataset}.", fontsize=16)
-    plt.legend(fontsize=12)
-    plt.xticks(ticks=cluster_sizes, labels=[str(k) for k in cluster_sizes], fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.tight_layout()
+#     plt.xlabel("Number of clusters", fontsize=14)
+#     plt.ylabel("Cluster cost", fontsize=14)
+#     plt.title(f"Cluster cost comparison on {dataset}.", fontsize=16)
+#     plt.legend(fontsize=12)
+#     plt.xticks(ticks=cluster_sizes, labels=[str(k) for k in cluster_sizes], fontsize=12)
+#     plt.yticks(fontsize=12)
+#     plt.tight_layout()
 
-    plt.savefig(plotfile, dpi=300, bbox_inches="tight")
+#     plt.savefig(plotfile, dpi=300, bbox_inches="tight")
 
 def parse_cli():
     parser = argparse.ArgumentParser("Call fair k-center code.")
@@ -198,6 +200,8 @@ if __name__ == "__main__":
 
     logger.info(f"Starting experiment with arguments: {kwargs} at time {start}...")
     logger.info(f"Running with cluster sizes {N_CLUSTERS}.")
+    logger.info(f"Using {datasets[args.dataset]['critical_attribute']} as color column.")
+    logger.info(f"Excluding columns {datasets[args.dataset]['exclude_columns']}.")
     logger.info(f"Results will be written to '{result_file}'.")
     logger.info(f"Plots will be written to '{plot_file}'.")
 
@@ -205,7 +209,7 @@ if __name__ == "__main__":
         f.write(f"dataset;subsample;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost\n")
 
     our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = run_experiment(args.dataset, N_CLUSTERS, args.seed, result_file)
-    plot_experiment_results(args.dataset, N_CLUSTERS, our_costs, ref_costs, plot_file)
+    cluster_cost_plot(result_file, plot_file)
 
     stop = get_timestamp()
     logger.info(f"Experiment completed at time {stop}.") 
