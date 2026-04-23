@@ -21,7 +21,7 @@ datasets = {
 }
 
 #N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
-N_CLUSTERS = [1, 2, 5, 10, 20, 50, 100]
+N_CLUSTERS = [1, 2, 5, 10, 20, 30, 40, 50, 100]
 SEED = 51503
 LOG_DIR = Path("logs") / "cluster_cost"
 PLOT_DIR = Path("plots") / "cluster_cost"
