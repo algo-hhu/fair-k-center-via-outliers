@@ -2,7 +2,6 @@ import argparse
 from datetime import datetime
 import logging
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import fair_kcenter as fk
@@ -14,10 +13,10 @@ from subsampling import balance_by_sampling, subsampling_uniform, ratio_balance_
 from cluster_cost_plot import cluster_cost_plot 
 
 datasets = {
-    "bank": {"file": "bank_processed", "critical_attribute": "married", "exclude_columns": ["row_id"], "subsample": 1000},
-    "census": {"file": "census_processed", "critical_attribute": "sex", "exclude_columns": ["row_id", "race"], "subsample": 600},
-    "diabetes": {"file": "diabetes_processed", "critical_attribute": "gender", "exclude_columns": ["row_id", "race"], "subsample": 1000},
-    "income": {"file": "acs_income_2018_1-Year_person_CA_features_processed", "critical_attribute": "SEX", "exclude_columns": ["row_id"], "subsample": 1000}
+    "bank":     {"critical_attribute": "married", "exclude_columns": ["row_id"]},
+    "census":   {"critical_attribute": "sex",     "exclude_columns": ["row_id", "race"]},
+    "diabetes": {"critical_attribute": "gender",  "exclude_columns": ["row_id", "race"]},
+    "income":   {"critical_attribute": "SEX",     "exclude_columns": ["row_id"]}
 }
 
 #N_CLUSTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40, 50]
@@ -54,7 +53,7 @@ logger = _setup_logger()
 
 
 
-def find_true_color_ratios(col: np.ndarray) -> list[int]:
+def find_true_color_ratios(col: np.ndarray) -> list[int]:   
     colors, counts = np.unique(col, return_counts=True)
     sorted_colors = np.argsort(colors)
     return [counts[i] for i in sorted_colors]
@@ -142,31 +141,6 @@ def run_experiment(dataset, cluster_sizes, seed, outfile=None):
 
     return our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs
 
-# def plot_experiment_results(dataset, cluster_sizes, our_costs, ref_costs, plotfile):  
-#     our_min  = [np.min(c)  for c in our_costs]
-#     our_max  = [np.max(c)  for c in our_costs]
-#     our_mean = [np.mean(c) for c in our_costs]
-#     ref_min  = [np.min(c)  for c in ref_costs]
-#     ref_max  = [np.max(c)  for c in ref_costs]
-#     ref_mean = [np.mean(c) for c in ref_costs]
-
-#     plt.figure(figsize=(10, 6))
-
-#     plt.plot(cluster_sizes, our_mean, marker="o", label="our method (mean)", linewidth=2, markersize=8, color="tab:blue")
-#     plt.fill_between(cluster_sizes, our_min, our_max, alpha=0.2, color="tab:blue", label="our method (min–max)")
-
-#     plt.plot(cluster_sizes, ref_mean, marker="s", label="chierichetti method (mean)", linewidth=2, markersize=8, color="tab:orange")
-#     plt.fill_between(cluster_sizes, ref_min, ref_max, alpha=0.2, color="tab:orange", label="chierichetti method (min–max)")
-
-#     plt.xlabel("Number of clusters", fontsize=14)
-#     plt.ylabel("Cluster cost", fontsize=14)
-#     plt.title(f"Cluster cost comparison on {dataset}.", fontsize=16)
-#     plt.legend(fontsize=12)
-#     plt.xticks(ticks=cluster_sizes, labels=[str(k) for k in cluster_sizes], fontsize=12)
-#     plt.yticks(fontsize=12)
-#     plt.tight_layout()
-
-#     plt.savefig(plotfile, dpi=300, bbox_inches="tight")
 
 def parse_cli():
     parser = argparse.ArgumentParser("Call fair k-center code.")
