@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime
 import logging
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -83,7 +84,9 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
     our_fairlet_cost = []
     ref_fairlet_cost = []
 
-    for filename in sorted(Path(f"instances/normalized/{ds['data_dir']}/subsamples/cut").glob(f"{ds['file_prefix']}_processed_*.csv")):
+    instances = sorted(Path(f"instances/normalized/{ds['data_dir']}/subsamples/cut").glob(f"{ds['file_prefix']}_processed_*.csv"))
+    n_subsamples_processed = 1
+    for filename in instances:
         df = pd.read_csv(filename)
         df = df.drop(columns=ds["exclude_columns"])
             
@@ -95,7 +98,7 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
         true_ratios = find_true_color_ratios(col)
         ideal_ratios = round_color_ratios_to_minority_color(true_ratios)
 
-        logger.info(f"Subsample {filename.name}: True ratios: {true_ratios}, ideal ratios: {ideal_ratios}")
+        logger.info(f"Subsample {n_subsamples_processed:05}/{len(instances)} [{filename.name}, k={n_clusters}]: True ratios: {true_ratios}, ideal ratios: {ideal_ratios}")
 
         start_us = get_r_usage()
         kcenter_us = fk.Fairkcenter(
@@ -147,12 +150,15 @@ def run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=None):
                 f.write(f"{dataset};{filename};{ds['critical_attribute']};{n_clusters};{seed};{true_ratios};{ideal_ratios};{our_cost[-1]};{ref_cost[-1]};{our_fairlet_cost[-1]};{ref_fairlet_cost[-1]};{cpu_us};{cpu_ref}\n")
 
         seed += 1
+        n_subsamples_processed += 1
 
     return our_cost, ref_cost, our_fairlet_cost, ref_fairlet_cost
 
 def run_experiment(dataset, cluster_sizes, seed, outfile=None):
     our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs = [], [], [], []
+    n_custersizes_processed = 1
     for n_clusters in cluster_sizes:
+        logger.info(f"Run for choice {n_custersizes_processed} of {len(cluster_sizes)} choices for k.")
         our_cost, ref_cost, our_fairlet_cost, ref_fairlet_cost = run_experiment_fixed_cluster_size(dataset, n_clusters, seed, outfile=outfile)
         our_costs.append(our_cost)
         ref_costs.append(ref_cost)
@@ -160,6 +166,7 @@ def run_experiment(dataset, cluster_sizes, seed, outfile=None):
         ref_fairlet_costs.append(ref_fairlet_cost)
         logger.info(f"{dataset} | {n_clusters} clusters | our cost = {our_cost}, ref cost = {ref_cost}")
         seed += len(our_cost)
+        n_custersizes_processed += 1
 
     return our_costs, ref_costs, our_fairlet_costs, ref_fairlet_costs
 
@@ -200,6 +207,12 @@ if __name__ == "__main__":
     logger.info(f"Excluding columns {datasets[args.dataset]['exclude_columns']}.")
     logger.info(f"Results will be written to '{result_file}'.")
     logger.info(f"Plots will be written to '{plot_file}'.")
+    
+    try:
+        commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+        logger.info(f"Currently at git commit: {commit_hash}")
+    except Exception as e:
+        logger.warning(f"Could not retrieve git commit hash: {e}")
 
     with open(result_file, "a") as f:
         f.write(f"dataset;subsample;color;k;seed;true_ratios;ideal_ratios;our_cost;ref_cost;our_fairlet_cost;ref_fairlet_cost;our_cpu;ref_cpu\n")
