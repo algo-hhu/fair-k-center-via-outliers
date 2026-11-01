@@ -1,3 +1,6 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Supported Python version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+
 # fair k-center
 
 This package computes an approximate $k$-center clustering under fairness constraints. In this fairness model every point has a color. The task of the clustering is to partition the points into clusters such that the color ratios of the data set are preserved in the clusters. For example if we have the two colors red and blue and the ratio of red to blue points is 1:2 in the dataset then we want that every cluster has a ratio of 1:2 of red and blue points. 
