@@ -1,6 +1,6 @@
 import ctypes
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -118,7 +118,8 @@ class Fairkcenter:
 
         if auto_ratios:
             logger.info("Set ratios automatically")
-            return (col_sizes // np.min(col_sizes)).astype(int)
+            ratios: np.ndarray = (col_sizes // np.min(col_sizes)).astype(int)
+            return ratios
 
         logger.info("No color ratios provided. All color ratios will be set to 1")
         return np.ones(self._n_col, dtype=int)
@@ -192,7 +193,13 @@ class Fairkcenter:
 
         self._store_results(c_cost, c_centers, c_labels, c_fairlets)
 
-    def _store_results(self, c_cost, c_centers, c_labels, c_fairlets) -> None:
+    def _store_results(
+        self,
+        c_cost: Any,
+        c_centers: Any,
+        c_labels: Any,
+        c_fairlets: Any,
+    ) -> None:
         cost = np.ctypeslib.as_array(c_cost)
         self.inertia_ = cost[1]
         self.inertia_fairlets_ = cost[0]
