@@ -45,4 +45,4 @@ jobs:
           poetry run flake8 fair_kcenter/
       - name: Run Tests
         run: |
-          bash run_all_experiments.sh
+          poetry run bash run_all_experiments.sh
