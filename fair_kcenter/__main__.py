@@ -6,13 +6,13 @@ from os.path import join
 from pathlib import Path
 from typing import Any, Dict
 
-import numpy as np
 import pandas as pd
 
 import fair_kcenter as fk
 from fair_kcenter.util import JsonEncoder
 
 logger = logging.getLogger(__name__)
+
 
 def set_up_logger(log_file: Path, mode: str = "w+") -> None:
     log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -61,17 +61,13 @@ if __name__ == "__main__":
     else:
         logging.getLogger().setLevel(logging.WARNING)
 
-    outlier=True
-    if args.no_outlier:
-        outlier=False
-
     data = pd.read_csv(args.data_path).to_numpy()
-    colors = data[:,-1]
+    colors = data[:, -1]
     X = data[:, 0:-1]
     logger.info(f"The data has the following shape: {X.shape}")
 
     color_ratios = None
-    auto_ratios=True
+    auto_ratios = True
 
     if args.ratios_path is not None:
         ratios_data = pd.read_csv(args.ratios_path).to_numpy(dtype=int)
@@ -81,7 +77,7 @@ if __name__ == "__main__":
     kcenter = fk.Fairkcenter(
         n_clusters=args.k,
         flets=args.store_flets,
-        outlier=outlier
+        without_anchors=not args.no_outlier,
     )
 
     kcenter.fit(
@@ -91,19 +87,18 @@ if __name__ == "__main__":
         auto_ratios=auto_ratios,
     )
 
-
     res_eval: Dict[str, Any] = {}
     if args.store_flets:
-        res_eval["fairlet_labels"]=kcenter.fairlets_
+        res_eval["fairlet_labels"] = kcenter.fairlets_
     res_eval.update(
         {
             "labels": kcenter.labels_,
             "centers": kcenter.cluster_centers_,
-            "cost":kcenter.inertia_,
-            "fairlet_cost":kcenter.inertia_fairlets_,
+            "cost": kcenter.inertia_,
+            "fairlet_cost": kcenter.inertia_fairlets_,
         }
     )
-    
+
     if args.results_path is not None:
         args.results_path.parent.mkdir(parents=True, exist_ok=True)
         with open(args.results_path, "w") as f:
