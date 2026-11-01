@@ -61,10 +61,6 @@ if __name__ == "__main__":
     else:
         logging.getLogger().setLevel(logging.WARNING)
 
-    outlier=True
-    if args.no_outlier:
-        outlier=False
-
     data = pd.read_csv(args.data_path).to_numpy()
     colors = data[:,-1]
     X = data[:, 0:-1]
@@ -81,7 +77,7 @@ if __name__ == "__main__":
     kcenter = fk.Fairkcenter(
         n_clusters=args.k,
         flets=args.store_flets,
-        outlier=outlier
+        without_anchors=not args.no_outlier,
     )
 
     kcenter.fit(

@@ -24,7 +24,7 @@ class Fairkcenter:
         self,
         X: np.ndarray,
         col: np.ndarray,
-        col_ratios: np.ndarray = None,
+        col_ratios: np.ndarray | None = None,
         auto_ratios: bool = False,
     ) -> "Fairkcenter":
         if not isinstance(X, np.ndarray) or not isinstance(X, np.ndarray):
@@ -57,16 +57,15 @@ class Fairkcenter:
                 logger.info(
                     "Use provided color ratios, automatic ratio setting will be ignored"
                 )
+            if np.all(col_ratios > 0):
+                self._col_ratios = col_ratios.astype(int)
+                if not np.issubdtype(col_ratios.dtype, np.integer):
+                    logger.info(
+                        f"Datatype of col_ratios {col_ratios.dtype} is convrerted to "
+                        f"{np.integer}, col_ratio is now {self._col_ratios}"
+                    )
             else:
-                if np.all(col_ratios > 0):
-                    self._col_ratios = col_ratios.astype(int)
-                    if not np.issubdtype(col_ratios.dtype, np.integer):
-                        logger.info(
-                            f"Datatype of col_ratios {col_ratios.dtype} is convrerted to "
-                            f"{np.integer}, col_ratio is now {self._col_ratios}"
-                        )
-                else:
-                    raise ValueError("Color ratios must be positive integers")
+                raise ValueError("Color ratios must be positive integers")
         else:
             if auto_ratios:
                 logger.info("Set ratios atomatically")
@@ -87,15 +86,14 @@ class Fairkcenter:
                     f"{self._n_col} colors provided but anchor version "
                     "is only available with 2 colors."
                 )
-            if self._col_ratios is not None:
-                if len(self._col_ratios) != 2 or not np.all(self._col_ratios == 1):
-                    raise ValueError(
-                        f"color ratios {self._col_ratios} provided "
-                        "but anchor version only allows a 1:1 color ratio."
-                    )
+            if len(self._col_ratios) != 2 or not np.all(self._col_ratios == 1):
+                raise ValueError(
+                    f"color ratios {self._col_ratios} provided "
+                    "but anchor version only allows a 1:1 color ratio."
+                )
 
         logger.info(f"Number of colors is set to {self._n_col}")
-        if self._col_ratios is not None and self._n_col != self._col_ratios.shape[0]:
+        if self._n_col != self._col_ratios.shape[0]:
             raise ValueError(
                 f"provided color ratios of length={self._col_ratios.shape[0]} unequal "
                 f"number of colors={self._n_col}."
@@ -117,12 +115,9 @@ class Fairkcenter:
         # Declare c types
         c_array_pts = self._X.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
         c_array_col = self._col.ctypes.data_as(ctypes.POINTER(ctypes.c_size_t))
-        if self._col_ratios is not None:
-            c_array_col_ratio = self._col_ratios.ctypes.data_as(
-                ctypes.POINTER(ctypes.c_size_t)
-            )
-        else:
-            c_array_col_ratio = ctypes.POINTER(ctypes.c_size_t)()
+        c_array_col_ratio = self._col_ratios.ctypes.data_as(
+            ctypes.POINTER(ctypes.c_size_t)
+        )
         c_n = ctypes.c_size_t(self._n_samples)
         c_d = ctypes.c_size_t(self._n_features_in_)
         c_k = ctypes.c_size_t(self.n_clusters)

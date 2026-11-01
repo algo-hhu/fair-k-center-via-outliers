@@ -16,8 +16,8 @@ If the dataset has no underlying color ratio of this form, one can pass a desire
   Number of clusters k of the k-center solution
 - `flets: bool, default=False` 
   If set to True the labeling of the fairlet assignment is stored
-- `outlier: bool, default=True` 
-  Should be set to False only when the data has 2 colors and the color ratio in the data is exactly 1:1. If set to False the clustering is computed with an algortihm that can't handle outliers. This may produce better results in the special case of 2 colors and color ratio 1:1.  
+- `without_anchors: bool, default=True` 
+  If set to False, the algorithm uses anchors and does not handle outliers. This is only allowed for two colors and a 1:1 color ratio, and may produce better results in this special case.
 
 ### Attributes:
 - `labels_: ndarray of shape (n_samples,) dtype=int` 
