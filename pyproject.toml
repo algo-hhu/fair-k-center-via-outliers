@@ -1,11 +1,25 @@
 [tool.poetry]
 name = "fair_kcenter"
 version = "0.1.0"
-description = ""
-authors = ["Daniel Schmidt <dschmidt@hhu.de>", "Anna Arutyunova <anna.arutyunova@hhu.de>"]
+description = "fair-k-center-via-outliers"
+authors = [
+    "Daniel Schmidt <dschmidt@hhu.de>",
+    "Anna Arutyunova <anna.arutyunova@hhu.de>",
+    "Michael Al Khatib <michael.al.khatib@hhu.de"
+    ]
+readme = "README.md"
+license = "MIT"
 packages = [
     { include = "fair_kcenter" }
 ]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[tool.poetry.urls]
+Homepage = "https://clustering-toolkit.algo.hhu.de/K-Center_Clustering"
+Repository = "https://github.com/algo-hhu/fair-k-center-via-outliers"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.15"
